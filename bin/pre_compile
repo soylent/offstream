@@ -1,0 +1,4 @@
+#!/bin/sh
+
+curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+  | tar --extract --xz --wildcards --strip-components=1 --directory=bin "ffmpeg-*/ffmpeg"

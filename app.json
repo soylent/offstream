@@ -1,0 +1,6 @@
+{
+  "name": "offstream",
+  "addons": [
+    "scheduler"
+  ]
+}
