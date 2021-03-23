@@ -1,9 +1,10 @@
 from tempfile import TemporaryDirectory
 from pathlib import Path
-from os.path import join
 import os
 import shutil
 import time
+import sys
+import math
 from concurrent.futures import ThreadPoolExecutor
 
 from streamlink import Streamlink, StreamError
@@ -12,108 +13,91 @@ import ipfshttpclient
 INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
 
 
-def upload_to_ifps(segments, tempdir):
-    infura_project_id = os.getenv("INFURA_PROJECT_ID")
-    infura_project_secret = os.getenv("INFURA_PROJECT_SECRET")
-    if infura_project_id and infura_project_secret:
-        auth = (infura_project_id, infura_project_secret)
-    else:
-        auth = None
+def upload_stream(segments, tempdir):
     with ipfshttpclient.connect(
         addr="/dns/ipfs.infura.io/tcp/5001/https",
-        auth=None,
     ) as ipfs:
+        m3u8_stub = tempdir / ".playlist.m3u8"
+        if not os.path.exists(m3u8_stub):
+            with open(m3u8_stub, "a") as m3u8_fd:
+                m3u8_fd.write("#EXTM3U\n")
+                m3u8_fd.write("#EXT-X-VERSION:3\n")
+                # TODO: Better ideas?
+                target_duration = max(map(math.ceil, segments.values()))
+                m3u8_fd.write(f"#EXT-X-TARGETDURATION:{target_duration}\n")
         files = [tempdir / name for name in segments]
-        responses = ipfs.add(
+        ipfs_files = ipfs.add(
             *files,
             trickle=True,
             wrap_with_directory=True,
             cid_version=1,
         )
-        for i in range(len(responses)):
-            response = responses[i]
-            if not response["Name"]:
-                cid = response["Hash"]
-                del responses[i]
-                break
-        assert cid, "directory not found"
-
-        m3u8name = tempdir / ".p.m3u8"
-        if not os.path.exists(m3u8name):
-            with open(m3u8name, "a") as m3u8:
-                m3u8.write("#EXTM3U\n")
-                m3u8.write("#EXT-X-VERSION:3\n")
-                # TODO: Don't hardcode this
-                m3u8.write("#EXT-X-TARGETDURATION:10\n")
-                # TODO: What is this?
-                # m3u8.write("#EXT-X-MEDIA-SEQUENCE:0")
-        with open(m3u8name, "a") as m3u8:
-            for response in responses:
-                name = response["Name"]
+        ipfs_dir = next(f for f in ipfs_files if not f["Name"])
+        with open(m3u8_stub, "a") as m3u8_fd:
+            for name in segments:
                 duration = segments[name]
-                url = INFURA_GATEWAY_URL.format(cid=cid, path=name)
-                m3u8.write(f"#EXTINF:{duration},\n{url}\n")
+                url = INFURA_GATEWAY_URL.format(cid=ipfs_dir["Hash"], path=name)
+                m3u8_fd.write(f"#EXTINF:{duration},\n{url}\n")
         for path in files:
             os.remove(path)
-        final_m3u8name = tempdir / "p.m3u8"
-        shutil.copyfile(m3u8name, final_m3u8name)
-        with open(final_m3u8name, "a") as final_m3u8:
-            final_m3u8.write("#EXT-X-ENDLIST\n")
-        playlist_ipfs = ipfs.add(final_m3u8name, cid_version=1)
-        return INFURA_GATEWAY_URL.format(cid=playlist_ipfs["Hash"], path="")
-
-
-def record(reader):
-    with TemporaryDirectory(prefix="offstream-") as tempdir, ThreadPoolExecutor(
-        max_workers=1
-    ) as executor:
-        tempdir = Path(tempdir)
-        segments = {}
-        segsize = 0
-
-        def process_sequence(sequence, response):
-            nonlocal segsize, segments
-            name = f"s{sequence.num}.ts"
-            with open(tempdir / name, "wb") as ts:
-                for chunk in response.iter_content(8192):
-                    ts.write(chunk)
-                    segsize += len(chunk)
-            segments[name] = sequence.segment.duration
-            # Infura: max request size is 100M
-            if segsize > 2 * 2 ** 20:
-                future = executor.submit(upload_to_ifps, segments, tempdir)
-                future.add_done_callback(lambda fut: print(fut.result()))
-                segsize = 0
-                segments = {}
-
-        reader.writer._write = process_sequence
-        reader.writer.join()
+        m3u8 = tempdir / "playlist.m3u8"
+        shutil.copyfile(m3u8_stub, m3u8)
+        with open(m3u8, "a") as m3u8_fd:
+            m3u8_fd.write("#EXT-X-ENDLIST\n")
+        m3u8_ipfs = ipfs.add(m3u8, cid_version=1)
+        return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
 
 
 def main():
     # TODO: accept command line options?
-    name = "lirik"
-    url = f"https://twitch.tv/{name}"
+    twname = "lirik"
+    url = f"https://twitch.tv/{twname}"
     quality = "720p60"
 
     streamlink = Streamlink()
     # We need to enable this option so that we can use response.raw
     streamlink.set_option("hls-segment-stream-data", True)
+    # Threads to download HLS segments
+    streamlink.set_option("hls-segment-threads", 2)
+    # Skip as far back as possible
+    streamlink.set_option("hls-live-restart", True)
     streamlink.set_plugin_option("twitch", "disable_ads", True)
     streamlink.set_plugin_option("twitch", "disable_reruns", True)
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
-    while True:
-        streams = streamlink.streams(url)
-        if not streams:
-            time.sleep(60 * 5)
-            continue
-        with streams[quality].open() as reader:
-            record(reader)
+    def process_sequence(sequence, response):
+        nonlocal segsize, segments
+        segname = f"segment{sequence.num}.ts"
+        with open(tempdir / segname, "wb") as ts:
+            for chunk in response.iter_content(8192):
+                ts.write(chunk)
+                segsize += len(chunk)
+        segments[segname] = sequence.segment.duration
+        # Infura: max request size is 100M
+        if segsize > 90 * 2 ** 20:
+            future = uploader.submit(upload_stream, segments, tempdir)
+            future.add_done_callback(lambda fut: print(fut.result()))
+            segsize = 0
+            segments = {}
+
+    with TemporaryDirectory(prefix="offstream-") as tempdir, ThreadPoolExecutor(
+        thread_name_prefix="Thread-StreamUploader", max_workers=1
+    ) as uploader:
+        tempdir = Path(tempdir)
+        segments = {}
+        segsize = 0
+        while True:
+            streams = streamlink.streams(url)
+            if not streams:
+                time.sleep(60 * 2)
+                continue
+            with streams[quality].open() as reader:
+                reader.writer._write = process_sequence
+                reader.writer.join()
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        pass
+        sys.exit(1)
