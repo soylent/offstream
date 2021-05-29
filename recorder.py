@@ -1,11 +1,14 @@
-from tempfile import TemporaryDirectory
-from pathlib import Path
-import os
-import shutil
-import time
-import sys
 import math
+import os
+import random
+import shutil
+import sys
+import time
+import queue
 from concurrent.futures import ThreadPoolExecutor
+import threading
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from streamlink import Streamlink, StreamError
 import ipfshttpclient
@@ -14,6 +17,7 @@ INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
 
 
 def upload_stream(segments, tempdir):
+    print(f"Upload seq {threading.current_thread().name}")
     with ipfshttpclient.connect(
         addr="/dns/ipfs.infura.io/tcp/5001/https",
     ) as ipfs:
@@ -48,12 +52,8 @@ def upload_stream(segments, tempdir):
         return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
 
 
-def main():
-    # TODO: accept command line options?
-    twname = "lirik"
-    url = f"https://twitch.tv/{twname}"
-    quality = "720p60"
-
+def record(url, quality):
+    print(f"Recording {url} {threading.current_thread().name}")
     streamlink = Streamlink()
     # We need to enable this option so that we can use response.raw
     streamlink.set_option("hls-segment-stream-data", True)
@@ -66,6 +66,7 @@ def main():
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
     def process_sequence(sequence, response):
+        print(f"Process seq {threading.current_thread().name}")
         nonlocal segsize, segments
         segname = f"segment{sequence.num}.ts"
         with open(tempdir / segname, "wb") as ts:
@@ -74,7 +75,8 @@ def main():
                 segsize += len(chunk)
         segments[segname] = sequence.segment.duration
         # Infura: max request size is 100M
-        if segsize > 90 * 2 ** 20:
+        # Heroku has a memory quota
+        if segsize > 40 * 2 ** 20:
             future = uploader.submit(upload_stream, segments, tempdir)
             future.add_done_callback(lambda fut: print(fut.result()))
             segsize = 0
@@ -86,18 +88,32 @@ def main():
         tempdir = Path(tempdir)
         segments = {}
         segsize = 0
-        while True:
-            streams = streamlink.streams(url)
-            if not streams:
-                time.sleep(60 * 2)
-                continue
+        if streams := streamlink.streams(url):
             with streams[quality].open() as reader:
                 reader.writer._write = process_sequence
                 reader.writer.join()
+    print(f"Done {url} {threading.current_thread().name}")
+    # Random sleep time to avoid activity spikes
+    time.sleep(random.randint(1, 60) + 4 * 60)
 
 
 if __name__ == "__main__":
+    q = queue.Queue()
+
+    q.put(("https://twitch.tv/georgehotz", "720p"))
+    q.put(("https://twitch.tv/garybernhardt", "720p60"))
+    q.put(("https://twitch.tv/lirik", "720p60"))
+
+    recorder = ThreadPoolExecutor(
+        max_workers=8, thread_name_prefix="Thread-StreamRecorder"
+    )
     try:
-        main()
-    except KeyboardInterrupt:
-        sys.exit(1)
+        while True:
+            stream = q.get()
+            print(f"Submitting seq {threading.current_thread().name}")
+            future = recorder.submit(record, *stream)
+            future.add_done_callback(
+                lambda fut, stream=stream: fut.exception() or q.put(stream)
+            )
+    finally:
+        recorder.shutdown(wait=False, cancel_futures=True)
