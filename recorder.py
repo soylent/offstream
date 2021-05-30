@@ -78,7 +78,7 @@ def record(url, quality):
         # Heroku memory limit is 512M
         if segsize > 40 * 2 ** 20:
             future = uploader.submit(upload_stream, segments, tempdir)
-            future.add_done_callback(lambda fut: print(fut.result()))
+            future.add_done_callback(lambda fut: print(url, fut.result()))
             segsize = 0
             segments = {}
 
