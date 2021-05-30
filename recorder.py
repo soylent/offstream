@@ -75,7 +75,7 @@ def record(url, quality):
                 segsize += len(chunk)
         segments[segname] = sequence.segment.duration
         # Infura: max request size is 100M
-        # Heroku has a memory quota
+        # Heroku memory limit is 512M
         if segsize > 40 * 2 ** 20:
             future = uploader.submit(upload_stream, segments, tempdir)
             future.add_done_callback(lambda fut: print(fut.result()))
@@ -100,8 +100,8 @@ def record(url, quality):
 if __name__ == "__main__":
     q = queue.Queue()
 
-    q.put(("https://twitch.tv/georgehotz", "720p"))
-    q.put(("https://twitch.tv/garybernhardt", "720p60"))
+    q.put(("https://twitch.tv/georgehotz", ">=720p,worst"))
+    q.put(("https://twitch.tv/garybernhardt", "best"))
     q.put(("https://twitch.tv/lirik", "720p60"))
 
     recorder = ThreadPoolExecutor(
