@@ -61,6 +61,7 @@ def record(url, quality):
     streamlink.set_option("hls-segment-threads", 2)
     # Skip as far back as possible
     streamlink.set_option("hls-live-restart", True)
+    streamlink.set_option("default-stream", "720p60,720p,best")
     streamlink.set_plugin_option("twitch", "disable_ads", True)
     streamlink.set_plugin_option("twitch", "disable_reruns", True)
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
@@ -100,7 +101,7 @@ def record(url, quality):
 if __name__ == "__main__":
     q = queue.Queue()
 
-    q.put(("https://twitch.tv/georgehotz", ">=720p,worst"))
+    q.put(("https://twitch.tv/georgehotz", "best"))
     q.put(("https://twitch.tv/garybernhardt", "best"))
     q.put(("https://twitch.tv/lirik", "720p60"))
 
