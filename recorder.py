@@ -116,6 +116,7 @@ if __name__ == "__main__":
     q.put(("https://twitch.tv/garybernhardt", "best"))
     q.put(("https://twitch.tv/lirik", "720p60"))
     q.put(("https://twitch.tv/nl_kripp", "best"))
+    q.put(("https://twitch.tv/shroud", "720p60"))
 
     recorder = ThreadPoolExecutor(
         max_workers=8, thread_name_prefix="Thread-StreamRecorder"
