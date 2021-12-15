@@ -13,6 +13,8 @@ from tempfile import TemporaryDirectory
 from streamlink import Streamlink, StreamError
 import ipfshttpclient
 
+from db import create_recording, update_recording_url
+
 INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
 
 
@@ -66,6 +68,15 @@ def record(url, quality):
     streamlink.set_plugin_option("twitch", "disable_reruns", True)
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
+    recording = None
+
+    def update_recording(recording_url):
+        nonlocal recording
+        if recording is None:
+            recording = create_recording(url, recording_url)
+        else:
+            update_recording_url(recording, recording_url)
+
     def process_sequence(sequence, response, is_map):
         # print(f"Process seq {threading.current_thread().name}")
         nonlocal segsize, segments
@@ -79,7 +90,7 @@ def record(url, quality):
         # Heroku memory limit is 512M
         if segsize > 40 * 2 ** 20:
             future = uploader.submit(upload_stream, segments, tempdir)
-            future.add_done_callback(lambda fut: print(url, fut.result()))
+            future.add_done_callback(lambda fut: update_recording(fut.result()))
             segsize = 0
             segments = {}
 

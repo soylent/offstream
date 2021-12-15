@@ -2,6 +2,7 @@
   "name": "offstream",
   "stack": "heroku-20",
   "addons": [
+    "heroku-postgresql",
     "scheduler"
   ]
 }
