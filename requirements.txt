@@ -1,6 +1,4 @@
--c constraints.txt
-flask
-gunicorn
-youtube-dl
-streamlink
-ipfshttpclient
+flask ~= 1.1
+gunicorn ~= 20.0
+streamlink ~= 3.0
+ipfshttpclient ~= 0.8.0a2

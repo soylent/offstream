@@ -66,7 +66,7 @@ def record(url, quality):
     streamlink.set_plugin_option("twitch", "disable_reruns", True)
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
-    def process_sequence(sequence, response):
+    def process_sequence(sequence, response, is_map):
         print(f"Process seq {threading.current_thread().name}")
         nonlocal segsize, segments
         segname = f"segment{sequence.num}.ts"
