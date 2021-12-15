@@ -17,7 +17,7 @@ INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
 
 
 def upload_stream(segments, tempdir):
-    print(f"Upload seq {threading.current_thread().name}")
+    # print(f"Upload seq {threading.current_thread().name}")
     with ipfshttpclient.connect(
         addr="/dns/ipfs.infura.io/tcp/5001/https",
     ) as ipfs:
@@ -53,7 +53,7 @@ def upload_stream(segments, tempdir):
 
 
 def record(url, quality):
-    print(f"Recording {url} {threading.current_thread().name}")
+    # print(f"Recording {url} {threading.current_thread().name}")
     streamlink = Streamlink()
     # We need to enable this option so that we can use response.raw
     streamlink.set_option("hls-segment-stream-data", True)
@@ -67,7 +67,7 @@ def record(url, quality):
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
     def process_sequence(sequence, response, is_map):
-        print(f"Process seq {threading.current_thread().name}")
+        # print(f"Process seq {threading.current_thread().name}")
         nonlocal segsize, segments
         segname = f"segment{sequence.num}.ts"
         with open(tempdir / segname, "wb") as ts:
@@ -93,7 +93,7 @@ def record(url, quality):
             with streams[quality].open() as reader:
                 reader.writer._write = process_sequence
                 reader.writer.join()
-    print(f"Done {url} {threading.current_thread().name}")
+    # print(f"Done {url} {threading.current_thread().name}")
     # Random sleep time to avoid activity spikes
     time.sleep(random.randint(1, 60) + 4 * 60)
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     try:
         while True:
             stream = q.get()
-            print(f"Submitting seq {threading.current_thread().name}")
+            # print(f"Submitting seq {threading.current_thread().name}")
             future = recorder.submit(record, *stream)
             future.add_done_callback(
                 lambda fut, stream=stream: fut.exception() or q.put(stream)
