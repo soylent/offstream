@@ -1,5 +1,6 @@
 {
   "name": "offstream",
+  "stack": "heroku-20",
   "addons": [
     "scheduler"
   ]
