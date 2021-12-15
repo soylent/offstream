@@ -58,6 +58,6 @@ def update_recording_url(recording, url):
         session.commit()
 
 
-def latest_recording(stream_url):
+def latest_recording(name):
     with Session() as session:
-        return session.query(Recording).join(Stream).filter(Stream.url==stream_url).order_by(Recording.created_at.desc()).first()
+        return session.query(Recording).join(Stream).filter(Stream.url.ilike(f"%{name}%")).order_by(Recording.created_at.desc()).first()
