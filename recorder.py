@@ -31,6 +31,8 @@ def upload_stream(segments, tempdir):
                 # TODO: Better ideas?
                 target_duration = max(map(math.ceil, segments.values()))
                 m3u8_fd.write(f"#EXT-X-TARGETDURATION:{target_duration}\n")
+                # Segments can only be added to the end of the playlist
+                m3u8_fd.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
         files = [tempdir / name for name in segments]
         ipfs_files = ipfs.add(
             *files,
@@ -48,8 +50,6 @@ def upload_stream(segments, tempdir):
             os.remove(path)
         m3u8 = tempdir / "playlist.m3u8"
         shutil.copyfile(m3u8_stub, m3u8)
-        with open(m3u8, "a") as m3u8_fd:
-            m3u8_fd.write("#EXT-X-ENDLIST\n")
         m3u8_ipfs = ipfs.add(m3u8, cid_version=1)
         return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
 
