@@ -13,9 +13,10 @@ from tempfile import TemporaryDirectory
 from streamlink import Streamlink, StreamError
 import ipfshttpclient
 
-from db import create_recording, update_recording_url
+from db import create_stream, update_stream_url
 
 INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
+# "https://gateway.ipfs.io/ipfs/{cid}/{path}"
 
 
 def upload_stream(segments, tempdir):
@@ -28,11 +29,14 @@ def upload_stream(segments, tempdir):
             with open(m3u8_stub, "a") as m3u8_fd:
                 m3u8_fd.write("#EXTM3U\n")
                 m3u8_fd.write("#EXT-X-VERSION:3\n")
+                # Segments can only be added to the end of the playlist
+                m3u8_fd.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
+                # Time offset from the beginning of the playlist
+                m3u8_fd.write("#EXT-X-START:TIME-OFFSET=0.0\n")
                 # TODO: Better ideas?
                 target_duration = max(map(math.ceil, segments.values()))
                 m3u8_fd.write(f"#EXT-X-TARGETDURATION:{target_duration}\n")
-                # Segments can only be added to the end of the playlist
-                m3u8_fd.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
+
         files = [tempdir / name for name in segments]
         ipfs_files = ipfs.add(
             *files,
@@ -45,11 +49,14 @@ def upload_stream(segments, tempdir):
             for name in segments:
                 duration = segments[name]
                 url = INFURA_GATEWAY_URL.format(cid=ipfs_dir["Hash"], path=name)
-                m3u8_fd.write(f"#EXTINF:{duration},\n{url}\n")
+                m3u8_fd.write(f"#EXTINF:{duration}\n{url}\n")
         for path in files:
             os.remove(path)
         m3u8 = tempdir / "playlist.m3u8"
         shutil.copyfile(m3u8_stub, m3u8)
+        # TODO: When the stream ends, add this:
+        with open(m3u8, "a") as m3u8_fd:
+            m3u8_fd.write("#EXT-X-ENDLIST\n")
         m3u8_ipfs = ipfs.add(m3u8, cid_version=1)
         return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
 
@@ -68,14 +75,14 @@ def record(url, quality):
     streamlink.set_plugin_option("twitch", "disable_reruns", True)
     streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
-    recording = None
+    stream = None
 
-    def update_recording(recording_url):
-        nonlocal recording
-        if recording is None:
-            recording = create_recording(url, recording_url)
+    def update_stream(stream_url):
+        nonlocal stream
+        if stream is None:
+            stream = create_stream(url, stream_url)
         else:
-            update_recording_url(recording, recording_url)
+            update_stream_url(stream, stream_url)
 
     def process_sequence(sequence, response, is_map):
         # print(f"Process seq {threading.current_thread().name}")
@@ -90,7 +97,7 @@ def record(url, quality):
         # Heroku memory limit is 512M
         if segsize > 40 * 2 ** 20:
             future = uploader.submit(upload_stream, segments, tempdir)
-            future.add_done_callback(lambda fut: update_recording(fut.result()))
+            future.add_done_callback(lambda fut: update_stream(fut.result()))
             segsize = 0
             segments = {}
 
@@ -117,6 +124,7 @@ if __name__ == "__main__":
     q.put(("https://twitch.tv/lirik", "720p60"))
     q.put(("https://twitch.tv/nl_kripp", "best"))
     q.put(("https://twitch.tv/shroud", "720p60"))
+    q.put(("https://twitch.tv/xqcow", "720p60"))
 
     recorder = ThreadPoolExecutor(
         max_workers=8, thread_name_prefix="Thread-StreamRecorder"
