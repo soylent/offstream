@@ -119,7 +119,7 @@ if __name__ == "__main__":
             streamer = q.get()
             future = recorder.submit(record, streamer)
             future.add_done_callback(
-                lambda fut, streamer=streamer: fut.exception() or q.put(streamer)
+                lambda fut, streamer=streamer: fut.result() or q.put(streamer)
             )
     finally:
         recorder.shutdown(wait=False, cancel_futures=True)

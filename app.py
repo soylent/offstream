@@ -1,4 +1,6 @@
 import os
+import subprocess
+import atexit
 
 from flask import Flask, abort, redirect, request
 
@@ -29,3 +31,8 @@ def create_streamer_():
     create_streamer(url, quality)
 
     return {"url": url, "quality": quality}, 201
+
+# Heroku cannot run more than 2 free size dynos. To sidestep this limitation, we
+# run the web and worker processes within the same dyno.
+recorder = subprocess.Popen(["python", "recorder.py"])
+atexit.register(lambda p: p.kill() and p.wait(), recorder)

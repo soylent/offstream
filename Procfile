@@ -1,3 +1,2 @@
-web: gunicorn app:app
-worker: python recorder.py
+web: gunicorn --workers 1 app:app
 clock: python clock.py
