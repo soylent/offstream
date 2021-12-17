@@ -21,6 +21,7 @@ class Streamer(Base):
 
     id = Column(Integer, primary_key=True)
     url = Column(String, unique=True)
+    quality = Column(String, nullable=False)
 
 
 class Stream(Base):
@@ -60,3 +61,15 @@ def update_stream_url(stream, url):
 def latest_stream(name):
     with Session() as session:
         return session.query(Stream).join(Streamer).filter(Streamer.url.ilike(f"%{name}%")).order_by(Stream.created_at.desc()).first()
+
+
+def streamers():
+    with Session() as session:
+        return session.query(Streamer).all()
+
+
+def create_streamer(url, quality):
+    with Session() as session:
+        streamer = Streamer(url=url, quality=quality)
+        session.add(streamer)
+        session.commit()

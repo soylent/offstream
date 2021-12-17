@@ -1,102 +1,68 @@
-import math
 import os
-import random
-import shutil
-import sys
-import time
 import queue
+import random
+import time
 from concurrent.futures import ThreadPoolExecutor
-import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from streamlink import Streamlink, StreamError
 import ipfshttpclient
+from streamlink import Streamlink
 
-from db import create_stream, update_stream_url
+from db import create_stream, streamers, update_stream_url
+from hls import Playlist
 
 INFURA_GATEWAY_URL = "https://{cid}.ipfs.infura-ipfs.io/{path}"
 # "https://gateway.ipfs.io/ipfs/{cid}/{path}"
+WORKER_THREADS = 8
+
+streamlink = Streamlink()
+# We need to enable this option so that we can use response.raw
+streamlink.set_option("hls-segment-stream-data", True)
+# Threads to download HLS segments
+streamlink.set_option("hls-segment-threads", 2)
+# Skip as far back as possible
+streamlink.set_option("hls-live-restart", True)
+streamlink.set_plugin_option("twitch", "disable_ads", True)
+streamlink.set_plugin_option("twitch", "disable_reruns", True)
+streamlink.set_plugin_option("twitch", "disable_hosting", True)
 
 
-def upload_stream(segments, tempdir):
-    # print(f"Upload seq {threading.current_thread().name}")
-    with ipfshttpclient.connect(
-        addr="/dns/ipfs.infura.io/tcp/5001/https",
-    ) as ipfs:
-        m3u8_stub = tempdir / ".playlist.m3u8"
-        if not os.path.exists(m3u8_stub):
-            with open(m3u8_stub, "a") as m3u8_fd:
-                m3u8_fd.write("#EXTM3U\n")
-                m3u8_fd.write("#EXT-X-VERSION:3\n")
-                # Segments can only be added to the end of the playlist
-                m3u8_fd.write("#EXT-X-PLAYLIST-TYPE:EVENT\n")
-                # Time offset from the beginning of the playlist
-                m3u8_fd.write("#EXT-X-START:TIME-OFFSET=0.0\n")
-                # TODO: Better ideas?
-                target_duration = max(map(math.ceil, segments.values()))
-                m3u8_fd.write(f"#EXT-X-TARGETDURATION:{target_duration}\n")
-
-        files = [tempdir / name for name in segments]
-        ipfs_files = ipfs.add(
-            *files,
-            trickle=True,
-            wrap_with_directory=True,
-            cid_version=1,
-        )
-        ipfs_dir = next(f for f in ipfs_files if not f["Name"])
-        with open(m3u8_stub, "a") as m3u8_fd:
-            for name in segments:
-                duration = segments[name]
-                url = INFURA_GATEWAY_URL.format(cid=ipfs_dir["Hash"], path=name)
-                m3u8_fd.write(f"#EXTINF:{duration}\n{url}\n")
-        for path in files:
-            os.remove(path)
-        m3u8 = tempdir / "playlist.m3u8"
-        shutil.copyfile(m3u8_stub, m3u8)
-        # TODO: When the stream ends, add this:
-        with open(m3u8, "a") as m3u8_fd:
-            m3u8_fd.write("#EXT-X-ENDLIST\n")
-        m3u8_ipfs = ipfs.add(m3u8, cid_version=1)
-        return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
+class Recorder:
+    def __init__(self, url: str, quality: str):
+        self.stream = None
+        self.playlist = Playlist()
 
 
-def record(url, quality):
-    # print(f"Recording {url} {threading.current_thread().name}")
-    streamlink = Streamlink()
-    # We need to enable this option so that we can use response.raw
-    streamlink.set_option("hls-segment-stream-data", True)
-    # Threads to download HLS segments
-    streamlink.set_option("hls-segment-threads", 2)
-    # Skip as far back as possible
-    streamlink.set_option("hls-live-restart", True)
-    streamlink.set_option("default-stream", "720p60,720p,best")
-    streamlink.set_plugin_option("twitch", "disable_ads", True)
-    streamlink.set_plugin_option("twitch", "disable_reruns", True)
-    streamlink.set_plugin_option("twitch", "disable_hosting", True)
-
+def record(streamer):
     stream = None
+    playlist = Playlist()
 
     def update_stream(stream_url):
         nonlocal stream
         if stream is None:
-            stream = create_stream(url, stream_url)
+            stream = create_stream(streamer.url, stream_url)
         else:
             update_stream_url(stream, stream_url)
 
     def process_sequence(sequence, response, is_map):
-        # print(f"Process seq {threading.current_thread().name}")
         nonlocal segsize, segments
         segname = f"segment{sequence.num}.ts"
         with open(tempdir / segname, "wb") as ts:
-            for chunk in response.iter_content(8192):
+            for chunk in response.iter_content(8192):  # WRITE_CHUNK_SIZE
                 ts.write(chunk)
                 segsize += len(chunk)
         segments[segname] = sequence.segment.duration
         # Infura: max request size is 100M
-        # Heroku memory limit is 512M
-        if segsize > 40 * 2 ** 20:
-            future = uploader.submit(upload_stream, segments, tempdir)
+        # Heroku: memory limit is 512M
+        stream_buffer_size = int(
+            os.getenv(
+                "OFFSTREAM_BUFFER_SIZE",
+                min(80 * 2 ** 20, 512 * 2 ** 20 // WORKER_THREADS),
+            )
+        )
+        if segsize > stream_buffer_size:
+            future = uploader.submit(upload_stream, playlist, segments, tempdir)
             future.add_done_callback(lambda fut: update_stream(fut.result()))
             segsize = 0
             segments = {}
@@ -107,35 +73,53 @@ def record(url, quality):
         tempdir = Path(tempdir)
         segments = {}
         segsize = 0
-        if streams := streamlink.streams(url):
-            with streams[quality].open() as reader:
+        if streams := streamlink.streams(streamer.url):
+            with streams[streamer.quality].open() as reader:
                 reader.writer._write = process_sequence
                 reader.writer.join()
-    # print(f"Done {url} {threading.current_thread().name}")
     # Random sleep time to avoid activity spikes
     time.sleep(random.randint(1, 60) + 4 * 60)
+
+
+def upload_stream(playlist, segments, tempdir):
+    files = [tempdir / name for name in segments]
+    with ipfshttpclient.connect(
+        addr="/dns/ipfs.infura.io/tcp/5001/https",
+    ) as ipfs:
+        ipfs_files = ipfs.add(
+            *files,
+            trickle=True,
+            wrap_with_directory=True,
+            cid_version=1,
+        )
+        ipfs_dir = next(f for f in ipfs_files if not f["Name"])
+        for path in files:
+            os.remove(path)
+        for name in segments:
+            duration = segments[name]
+            url = INFURA_GATEWAY_URL.format(cid=ipfs_dir["Hash"], path=name)
+            playlist.append_segment(url, duration)
+        m3u8 = tempdir / "playlist.m3u8"
+        playlist.write(m3u8)
+        m3u8_ipfs = ipfs.add(m3u8, cid_version=1)
+        return INFURA_GATEWAY_URL.format(cid=m3u8_ipfs["Hash"], path="")
 
 
 if __name__ == "__main__":
     q = queue.Queue()
 
-    q.put(("https://twitch.tv/georgehotz", "best"))
-    q.put(("https://twitch.tv/garybernhardt", "best"))
-    q.put(("https://twitch.tv/lirik", "720p60"))
-    q.put(("https://twitch.tv/nl_kripp", "best"))
-    q.put(("https://twitch.tv/shroud", "720p60"))
-    q.put(("https://twitch.tv/xqcow", "720p60"))
+    for streamer in streamers():
+        q.put(streamer)
 
     recorder = ThreadPoolExecutor(
-        max_workers=8, thread_name_prefix="Thread-StreamRecorder"
+        max_workers=WORKER_THREADS, thread_name_prefix="Thread-StreamRecorder"
     )
     try:
         while True:
-            stream = q.get()
-            # print(f"Submitting seq {threading.current_thread().name}")
-            future = recorder.submit(record, *stream)
+            streamer = q.get()
+            future = recorder.submit(record, streamer)
             future.add_done_callback(
-                lambda fut, stream=stream: fut.exception() or q.put(stream)
+                lambda fut, streamer=streamer: fut.exception() or q.put(streamer)
             )
     finally:
         recorder.shutdown(wait=False, cancel_futures=True)
