@@ -1,2 +1,2 @@
-web: gunicorn --workers 1 app:app
-clock: python clock.py
+web: flask offstream record & gunicorn app
+clock: flask offstream ping

@@ -1,8 +1,19 @@
 {
   "name": "offstream",
+  "description": "Personal live stream recorder",
   "stack": "heroku-20",
+  "website": "https://github.com/soylent/offstream",
+  "repository": "https://github.com/soylent/offstream",
+  "success_url": "/welcome",
+  "scrips": {
+    "postdeploy": "flask offstream create"
+  },
   "addons": [
     "heroku-postgresql",
     "scheduler"
+  ],
+  "keywords": [
+    "twitch",
+    "streaming"
   ]
 }

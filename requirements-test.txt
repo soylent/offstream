@@ -1,0 +1,3 @@
+--requirement requirements.txt
+pytest ~= 6.2
+python-dotenv ~= 0.19
