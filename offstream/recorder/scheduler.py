@@ -35,7 +35,7 @@ class Scheduler:
         self._lock = Lock()
 
     def start(self) -> None:
-        def record_callback(future: Future[None]) -> None:
+        def recording_complete(future: Future[None]) -> None:
             del recording[future]
             try:
                 future.result()  # Log exception if any
@@ -54,7 +54,7 @@ class Scheduler:
                     break
                 else:
                     recording[future] = streamer.id
-                    future.add_done_callback(record_callback)
+                    future.add_done_callback(recording_complete)
             self._closed.wait(CHECK_INTERVAL_SECONDS)
 
     def close(self) -> None:
