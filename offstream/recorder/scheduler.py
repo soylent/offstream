@@ -68,8 +68,6 @@ class Scheduler:
 
     def _create_streamlink(self) -> Streamlink:
         streamlink = Streamlink()
-        # Skip as far back as possible
-        streamlink.set_option("hls-live-restart", True)
         # We need to enable this option so that we can use response.raw
         streamlink.set_option("hls-segment-stream-data", True)
         # TODO: ENV?
@@ -94,6 +92,7 @@ class Scheduler:
         plugin = plugin_class(url)
         if streams := plugin.streams(sorting_excludes=[f">{streamer.max_quality}"]):
             stream = streams["best"]
+            stream.force_restart = True
             with stream.open() as reader:
                 with self._lock:
                     if self._closed.is_set():
