@@ -21,7 +21,7 @@ machine {{ request.host }}
     <p>Next, add your favorite streamers.</p>
     <pre>
 $ curl {{ request.url }}/streamers --netrc -d name=garybernhardt
-$ curl {{ request.url }}/streamers --netrc -d name=esl_sc2 -d max_quality=720p
+$ curl {{ request.url }}/streamers --netrc -d name=esl_sc2 -d max_quality=720p60
 </pre
     >
     <p>When any of the streamers is live, the app will record the stream.</p>
