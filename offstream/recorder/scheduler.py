@@ -83,6 +83,7 @@ class Scheduler:
             with open(os.path.join(recorded_stream.workdir.name, segfile), "wb") as ts:
                 # TODO: reader.writer.WRITE_CHUNK_SIZE not yet released
                 for chunk in response.iter_content(8192):
+                    reader.buffer.write(chunk)
                     size += ts.write(chunk)
             recorded_stream.append_segment(segfile, size, sequence.segment.duration)
 
@@ -102,7 +103,8 @@ class Scheduler:
                     self._logger.info("Recording %s", streamer.name)
                     with RecordedStream(streamer.id, streamer.name, plugin.get_category(), plugin.get_title(), BUFFER_SIZE) as recorded_stream:
                         reader.writer._write = process_sequence  # HACK
-                        reader.worker.join()
+                        while reader.read(-1):
+                            pass
                 finally:
                     with self._lock:
                         self._readers.remove(reader)
