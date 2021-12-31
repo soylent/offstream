@@ -92,8 +92,9 @@ class Scheduler:
         assert streamer.name
         plugin_class, url = self._streamlink.resolve_url(streamer.url)
         plugin = plugin_class(url)
-        if streams := plugin.streams():
-            with streams[streamer.quality].open() as reader:
+        if streams := plugin.streams(sorting_excludes=[f">{streamer.max_quality}"]):
+            stream = streams["best"]
+            with stream.open() as reader:
                 with self._lock:
                     if self._closed.is_set():
                         return

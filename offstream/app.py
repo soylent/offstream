@@ -41,9 +41,9 @@ def latest_stream(name: str) -> ResponseReturnValue:
 def create_streamer() -> ResponseReturnValue:
     require_auth()
     name = request.form.get("name")
-    quality = request.form.get("quality")
+    max_quality = request.form.get("max_quality")
     try:
-        streamer = db.Streamer(name=name, quality=quality)
+        streamer = db.Streamer(name=name, max_quality=max_quality)
     except ValueError as error:
         abort(422, str(error))
     with db.Session() as session:
@@ -114,4 +114,4 @@ def require_auth() -> None:
 
 
 def _serialize_streamer(streamer: db.Streamer) -> dict[str, Any]:
-    return { "id": streamer.id, "name": streamer.name, "url": streamer.url, "quality": streamer.quality }
+    return { "id": streamer.id, "name": streamer.name, "url": streamer.url, "max_quality": streamer.max_quality }

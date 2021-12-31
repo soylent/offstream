@@ -39,7 +39,7 @@ class Streamer(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    quality = Column(String, default="best", nullable=False)
+    max_quality = Column(String, default="best", nullable=False)
 
     @validates("name")  # type: ignore
     def validate_name(self, key: str, name: str) -> str:
@@ -47,13 +47,13 @@ class Streamer(Base):
             raise ValueError("Missing streamer name")
         return name.lower()
 
-    _QUALITY_RE = re.compile(r"\d+p(\d+)?|[a-z_]+")
+    _MAX_QUALITY_RE = re.compile(r"\d+p(\d+)?|[a-z_]+")
 
-    @validates("quality")  # type: ignore
-    def validate_quality(self, key: str, quality: str) -> str:
-        if quality is not None and not re.fullmatch(self._QUALITY_RE, quality):
-            raise ValueError(f"Invalid stream quality: {quality}")
-        return quality
+    @validates("max_quality")  # type: ignore
+    def validate_max_quality(self, key: str, max_quality: str) -> str:
+        if max_quality is not None and not re.fullmatch(self._MAX_QUALITY_RE, max_quality):
+            raise ValueError(f"Invalid max stream quality: {max_quality}")
+        return max_quality
 
     _URI_TEMPLATE = "https://twitch.tv/{name}"
 

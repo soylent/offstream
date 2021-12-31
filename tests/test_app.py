@@ -49,7 +49,7 @@ def test_create_streamer(client, name, auth):
     assert response.status_code == 201
     assert response.json["id"]
     assert response.json["name"] == "x"
-    assert response.json["quality"] == "best"
+    assert response.json["max_quality"] == "best"
     assert response.json["url"] == "https://twitch.tv/x"
 
 
@@ -79,15 +79,15 @@ def test_create_streamer_with_invalid_name(client, name, auth):
     assert response.json["error"]["description"] == "Missing streamer name"
 
 
-@pytest.mark.parametrize("quality", ["", "0"])
-def test_create_streamer_with_invalid_quality(client, quality, auth):
+@pytest.mark.parametrize("max_quality", ["", "0"])
+def test_create_streamer_with_invalid_max_quality(client, max_quality, auth):
     response = client.post(
-        "/streamers", data={"name": "x", "quality": quality}, auth=auth
+        "/streamers", data={"name": "x", "max_quality": max_quality}, auth=auth
     )
 
     assert response.status_code == 422
     assert response.json["error"]["name"] == "unprocessable entity"
-    assert response.json["error"]["description"] == f"Invalid stream quality: {quality}"
+    assert response.json["error"]["description"] == f"Invalid max stream quality: {max_quality}"
 
 
 def test_delete_streamer(client, stream, session, auth):
@@ -101,7 +101,7 @@ def test_delete_streamer(client, stream, session, auth):
     assert response.status_code == 200
     assert response.json["id"] == streamer.id
     assert response.json["name"] == streamer.name
-    assert response.json["quality"] == streamer.quality
+    assert response.json["max_quality"] == streamer.max_quality
     assert response.json["url"] == streamer.url
 
 

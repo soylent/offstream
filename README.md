@@ -33,8 +33,8 @@ machine your-app-name.herokuapp.com
 Next, add your favorite streamers.
 
 ```sh
-$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=garybernhardt -d quality=best
-$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=esl_sc2 -d quality=1080p60
+$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=garybernhardt
+$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=esl_sc2 -d max_quality=720p
 ```
 
 When any of the streamers is live, the app will record the stream.
