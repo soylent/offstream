@@ -43,8 +43,7 @@ class RecordedStream:
         self._playlist = Playlist()
         self._session = db.Session()
         self._streamer_name = streamer_name
-        print("title", title)
-        self._stream = db.Stream(streamer_id=streamer_id, category=category, title=(title or "-"))
+        self._stream = db.Stream(streamer_id=streamer_id, category=category, title=title)
         self._uploader = ThreadPoolExecutor(max_workers=1)
         self.workdir = TemporaryDirectory(prefix="offstream-")
 

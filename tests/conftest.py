@@ -50,11 +50,16 @@ def auth(settings):
 
 
 @pytest.fixture
-def stream(session):
-    streamer = db.Streamer(name="x")
-    stream_ = db.Stream(
-        title="y", category="z", url="https://example.org/", streamer=streamer
-    )
+def streamer(session):
+    streamer_ = db.Streamer(name="x")
+    session.add(streamer_)
+    session.commit()
+    return streamer_
+
+
+@pytest.fixture
+def stream(streamer, session):
+    stream_ = db.Stream(url="https://example.org/", streamer=streamer)
     session.add(stream_)
     session.commit()
     return stream_

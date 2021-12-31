@@ -68,8 +68,8 @@ class Stream(Base):
     id = Column(Integer, primary_key=True)
     streamer_id = Column(Integer, ForeignKey("streamers.id"), nullable=False)
     url = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    category = Column(String, nullable=False)
+    title = Column(String, nullable=True)
+    category = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
 
     streamer = relationship(Streamer, backref=backref("streams", cascade="all"), uselist=False)
