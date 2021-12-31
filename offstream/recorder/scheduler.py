@@ -90,7 +90,9 @@ class Scheduler:
 
         assert streamer.id
         assert streamer.name
-        if streams := self._streamlink.streams(streamer.url):
+        plugin_class, url = self._streamlink.resolve_url(streamer.url)
+        plugin = plugin_class(url)
+        if streams := plugin.streams():
             with streams[streamer.quality].open() as reader:
                 with self._lock:
                     if self._closed.is_set():
@@ -98,8 +100,6 @@ class Scheduler:
                     self._readers.add(reader)
                 try:
                     self._logger.info("Recording %s", streamer.name)
-                    plugin_class, url = self._streamlink.resolve_url(streamer.url)
-                    plugin = plugin_class(url)
                     with RecordedStream(streamer.id, streamer.name, plugin.get_category(), plugin.get_title(), BUFFER_SIZE) as recorded_stream:
                         reader.writer._write = process_sequence  # HACK
                         reader.worker.join()
