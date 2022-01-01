@@ -6,6 +6,7 @@ from threading import Event, Lock
 from typing import IO, Any
 
 from offstream import db
+from requests.exceptions import ConnectionError, ChunkedEncodingError
 from streamlink import Streamlink  # type: ignore
 
 from .storage import RecordedStream
@@ -82,9 +83,13 @@ class Scheduler:
             size = 0
             with open(os.path.join(recorded_stream.workdir.name, segfile), "wb") as ts:
                 # TODO: reader.writer.WRITE_CHUNK_SIZE not yet released
-                for chunk in response.iter_content(8192):
-                    reader.buffer.write(chunk)
-                    size += ts.write(chunk)
+                try:
+                    for chunk in response.iter_content(8192):
+                        reader.buffer.write(chunk)
+                        size += ts.write(chunk)
+                except (ConnectionError, ChunkedEncodingError) as e:
+                    reader.close()
+                    return
             recorded_stream.append_segment(segfile, size, sequence.segment.duration)
 
         assert streamer.id
