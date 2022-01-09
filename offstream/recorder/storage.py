@@ -1,9 +1,11 @@
 import logging
 import os
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
+from pathlib import Path
+from queue import Queue
 from tempfile import TemporaryDirectory
 from types import TracebackType
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Any
 
 import ipfshttpclient  # type: ignore
 from offstream import db
@@ -33,7 +35,11 @@ class RecordedStream:
     PLAYLIST_NAME = "playlist.m3u8"
 
     def __init__(
-            self, streamer_id: int, streamer_name: str, category: str, title: str, dirty_buffer_size: int
+        self,
+        queue: Queue[Any],
+        stream: db.Stream,
+        streamer_name: str,
+        dirty_buffer_size: int,
     ) -> None:
         self._dirty_buffer_size = dirty_buffer_size
         self._dirty_segments: list[Segment] = []
@@ -41,21 +47,22 @@ class RecordedStream:
         self._ipfs = ipfshttpclient.connect(addr=IPFS_API_ADDR, session=True)
         self._logger = logging.getLogger("offstream")
         self._playlist = Playlist()
-        self._session = db.Session()
+        self._queue = queue
+        self._stream = stream
         self._streamer_name = streamer_name
-        self._stream = db.Stream(streamer_id=streamer_id, category=category, title=title)
         self._uploader = ThreadPoolExecutor(max_workers=1)
-        self.workdir = TemporaryDirectory(prefix="offstream-")
+        self._workdir = TemporaryDirectory(prefix="offstream-")
+        self.workdir_path = Path(self._workdir.name)
 
     def append_segment(self, file: str, size: int, duration: float) -> None:
-        def upload_callback(future: Future[str]) -> None:
+        def upload_complete(future: Future[str]) -> None:
             try:
                 stream_url = future.result()
             except CancelledError:  # Closing time
-                return
-            self._stream.url = stream_url
-            self._session.add(self._stream)
-            self._session.commit()
+                pass
+            else:
+                self._stream.url = stream_url
+                self._queue.put(self._stream)
 
         segment = Segment(file, size, duration)
         self._dirty_size += size
@@ -69,15 +76,12 @@ class RecordedStream:
             except RuntimeError:  # Closing time
                 pass
             else:
-                upload.add_done_callback(upload_callback)
+                upload.add_done_callback(upload_complete)
 
     def _flush(self, segments: list[Segment]) -> str:
-        files = [os.path.join(self.workdir.name, segment.file) for segment in segments]
+        files = [self.workdir_path / segment.file for segment in segments]
         ipfs_files = self._ipfs.add(
-            *files,
-            trickle=True,
-            wrap_with_directory=True,
-            cid_version=1,
+            *files, trickle=True, wrap_with_directory=True, cid_version=1
         )
         for file in files:
             os.remove(file)
@@ -85,7 +89,7 @@ class RecordedStream:
         for segment in segments:
             url = _ipfs_url(dir_ipfs["Hash"], path=segment.file)
             self._playlist.append(url, segment.duration)
-        m3u8 = os.path.join(self.workdir.name, self.PLAYLIST_NAME)
+        m3u8 = self.workdir_path / self.PLAYLIST_NAME
         self._playlist.write(m3u8)
         m3u8_ipfs = self._ipfs.add(m3u8, cid_version=1)
         return _ipfs_url(m3u8_ipfs["Hash"])
@@ -97,9 +101,8 @@ class RecordedStream:
         traceback: Optional[TracebackType],
     ) -> None:
         self._uploader.shutdown(wait=True, cancel_futures=True)
-        self._session.close()
         self._ipfs.close()
-        self.workdir.cleanup()
+        self._workdir.cleanup()
 
     def __enter__(self) -> "RecordedStream":
         return self

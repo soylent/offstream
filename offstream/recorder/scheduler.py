@@ -2,11 +2,12 @@ import logging
 import os
 import random
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
-from threading import Event, Lock
-from typing import IO, Any
+from queue import Queue
+from threading import Event, Lock, Thread
+from typing import IO, Any, Optional
 
 from offstream import db
-from requests.exceptions import ConnectionError, ChunkedEncodingError
+from requests.exceptions import ChunkedEncodingError, ConnectionError
 from streamlink import Streamlink  # type: ignore
 
 from .storage import RecordedStream
@@ -25,6 +26,21 @@ def _buffer_size() -> int:
 BUFFER_SIZE = _buffer_size()
 
 
+class StreamURLUpdater(Thread):
+    def __init__(self, queue: Queue[Optional[db.Stream]]):
+        super().__init__()
+        self._queue = queue
+
+    def run(self) -> None:
+        with db.Session() as session:
+            while True:
+                if stream := self._queue.get():
+                    session.merge(stream)
+                    session.commit()
+                else:
+                    break
+
+
 class Scheduler:
     def __init__(self) -> None:
         self._closed = Event()
@@ -33,6 +49,8 @@ class Scheduler:
         self._recorder = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS)
         self._session = db.Session()
         self._streamlink = self._create_streamlink()
+        self._queue: Queue[Optional[db.Stream]] = Queue()
+        self._stream_url_updater = StreamURLUpdater(self._queue)
         self._lock = Lock()
 
     def start(self) -> None:
@@ -43,6 +61,7 @@ class Scheduler:
             except CancelledError:
                 pass
 
+        self._stream_url_updater.start()
         recording: dict[Future[None], int] = {}
         while not self._closed.is_set():
             for streamer in self._session.scalars(db.streamers()):
@@ -65,6 +84,8 @@ class Scheduler:
             for reader in self._readers:
                 reader.close()
         self._recorder.shutdown(wait=True, cancel_futures=True)
+        self._queue.put(None)
+        self._stream_url_updater.join()
         self._session.close()
 
     def _create_streamlink(self) -> Streamlink:
@@ -78,19 +99,24 @@ class Scheduler:
         return streamlink
 
     def _record_streamer(self, streamer: db.Streamer) -> None:
-        def process_sequence(sequence: Any, response: Any, is_map: bool) -> None:
-            segfile = f"{sequence.num}.ts"
+        def process_sequence(
+            sequence: Any, response: Any, *_args: Any, **_kwargs: Any
+        ) -> None:
+            segfile = recorded_stream.workdir_path / f"{sequence.num}.ts"
             size = 0
-            with open(os.path.join(recorded_stream.workdir.name, segfile), "wb") as ts:
-                # TODO: reader.writer.WRITE_CHUNK_SIZE not yet released
+            with segfile.open("wb") as seg:
                 try:
+                    # TODO: reader.writer.WRITE_CHUNK_SIZE not yet released
                     for chunk in response.iter_content(8192):
                         reader.buffer.write(chunk)
-                        size += ts.write(chunk)
-                except (ConnectionError, ChunkedEncodingError) as e:
+                        size += seg.write(chunk)
+                except (ConnectionError, ChunkedEncodingError) as error:
+                    print("!! Caught", error)
                     reader.close()
                     return
-            recorded_stream.append_segment(segfile, size, sequence.segment.duration)
+            recorded_stream.append_segment(
+                segfile.name, size, sequence.segment.duration
+            )
 
         assert streamer.id
         assert streamer.name
@@ -106,7 +132,14 @@ class Scheduler:
                     self._readers.add(reader)
                 try:
                     self._logger.info("Recording %s", streamer.name)
-                    with RecordedStream(streamer.id, streamer.name, plugin.get_category(), plugin.get_title(), BUFFER_SIZE) as recorded_stream:
+                    db_stream = db.Stream(
+                        streamer=streamer,
+                        category=plugin.get_category(),
+                        title=plugin.get_title(),
+                    )
+                    with RecordedStream(
+                        self._queue, db_stream, streamer.name, BUFFER_SIZE
+                    ) as recorded_stream:
                         reader.writer._write = process_sequence  # HACK
                         while reader.read(-1):
                             pass

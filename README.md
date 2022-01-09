@@ -4,7 +4,7 @@ Record your favorite twitch streams automatically and watch them later.
 
 - There is no web UI, just use curl and your favorite video player.
 - Streams are recorded as is, without re-transcoding.
-- Recordings are never muted because of DMCA.
+- Recordings are never muted.
 - Ads are optional.
 - Completely free. You can deploy it to Heroku or run on your own server.
 - Recordings are stored on IPFS.
@@ -50,12 +50,14 @@ An RSS feed of all recordings is available at `https://your-app-name.herokuapp.c
 
 ## Summary
 
-| endpoint                   | description              |
-| -------------------------- | ------------------------ |
-| `POST /streamers`          | Track a new streamer.    |
-| `DELETE /streamers/<name>` | Delete the streamer.     |
-| `GET /lastest/<name>`      | Watch the latest stream. |
-| `GET /rss`                 | Feed of recordings.      |
+- `POST /streamers`
+  Track a new streamer.
+- `DELETE /streamers/<name>`
+  Delete the streamer. WARNING: Deletes associated streams too.
+- `GET /lastest/<name>`
+  Watch the latest stream.
+- `GET /rss`
+  Feed of recordings.
 
 ## Configuration
 

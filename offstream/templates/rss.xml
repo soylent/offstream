@@ -11,7 +11,8 @@
       <description>{{ stream.category | default("?", true) }}</description>
       <pubDate>{{ stream.created_at | rfc822 }}</pubDate>
       <guid isPermaLink="false">offstream:{{ stream.id }}</guid>
-      <enclosure url="{{ stream.url }}" type="application/vnd.apple.mpegurl" medium="video"/>
+      <link>{{ stream.url }}</link>
+      <enclosure url="{{ stream.url }}" type="application/vnd.apple.mpegurl" />
     </item>
     {%- endfor %}
   </channel>

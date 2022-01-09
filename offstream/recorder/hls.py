@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, NamedTuple, Optional
 
 # See rfc8216 and https://developer.apple.com/documentation/http_live_streaming
@@ -25,9 +26,9 @@ class Playlist:
         segment = Segment(url, duration, title)
         self.segments.append(segment)
 
-    def write(self, path: str) -> None:
+    def write(self, path: Path) -> None:
         target_duration = max(map(lambda s: s.duration, self.segments), default=0)
-        with open(path, "w", encoding="utf-8") as m3u8:
+        with path.open(mode="w", encoding="utf-8") as m3u8:
             m3u8.write("#EXTM3U\n")
             m3u8.write(f"#EXT-X-VERSION:{self.version}\n")
             if self.playlist_type is not None:

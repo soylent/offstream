@@ -16,11 +16,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
+    backref,
     declarative_base,
     joinedload,
     relationship,
     sessionmaker,
-    backref,
     validates,
 )
 from sqlalchemy.sql.expression import Select

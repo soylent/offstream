@@ -1,5 +1,4 @@
 import os
-
 import flask
 
 flask.cli.load_dotenv()
@@ -50,7 +49,7 @@ def auth(settings):
 
 
 @pytest.fixture
-def streamer(session):
+def streamer(session, setup_db):
     streamer_ = db.Streamer(name="x")
     session.add(streamer_)
     session.commit()
@@ -72,4 +71,4 @@ def bad_auth(request):
 
 @pytest.fixture
 def m3u8(tmpdir):
-    return tmpdir.join("playlist.m3u8")
+    return tmpdir / "playlist.m3u8"
