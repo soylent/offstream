@@ -69,7 +69,6 @@ class Scheduler:
         self._logger.debug("Shutting down the recorder")
         self._recorder.shutdown(wait=True, cancel_futures=True)
         self._session.close()
-        self._logger.debug("Scheduler is closed")
 
     def _create_streamlink(self) -> Streamlink:
         streamlink = Streamlink()

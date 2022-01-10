@@ -53,30 +53,25 @@ class RecordedStream:
         self.workdir_path = Path(self._workdir.name)
 
     def append_segment(self, file: str, size: int, duration: float) -> None:
-        def upload_complete(future: Future[str]) -> None:
-            try:
-                stream_url = future.result()
-                self._logger.debug("Flushed %s", self._streamer_name)
-            except CancelledError:  # Closing time
-                pass
-            else:
-                self._queue.put(stream_url)
-
         segment = Segment(file, size, duration)
         self._dirty_size += size
         self._dirty_segments.append(segment)
         if self._dirty_size > self._dirty_buffer_size:
-            segments, self._dirty_segments = self._dirty_segments, []
-            self._dirty_size = 0
-            self._logger.info("Flushing %s", self._streamer_name)
-            try:
-                upload = self._uploader.submit(self._flush, segments)
-            except RuntimeError:  # Closing time
-                pass
-            else:
-                upload.add_done_callback(upload_complete)
+            self._flush()
 
-    def _flush(self, segments: list[Segment]) -> str:
+    def _flush(self) -> None:
+        def upload_complete(future: Future[str]) -> None:
+            stream_url = future.result()
+            self._logger.debug("Flushed %s", self._streamer_name)
+            self._queue.put(stream_url)
+
+        self._logger.info("Flushing %s", self._streamer_name)
+        segments, self._dirty_segments = self._dirty_segments, []
+        self._dirty_size = 0
+        upload = self._uploader.submit(self._upload_segments, segments)
+        upload.add_done_callback(upload_complete)
+
+    def _upload_segments(self, segments: list[Segment]) -> str:
         files = [self.workdir_path / segment.file for segment in segments]
         ipfs_files = self._ipfs.add(
             *files, trickle=True, wrap_with_directory=True, cid_version=1
@@ -98,10 +93,10 @@ class RecordedStream:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        self._logger.debug("Closing %s", self._streamer_name, exc_info=True)
-        # TODO: Flush dirty segments when the stream ends, but not on interrupt
-        # or exception
-        self._uploader.shutdown(wait=True, cancel_futures=True)
+        self._logger.debug("Closing %s", self._streamer_name)
+        if self._dirty_size > 0:
+            self._flush()
+        self._uploader.shutdown()
         self._ipfs.close()
         self._workdir.cleanup()
 
