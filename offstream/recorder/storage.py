@@ -36,8 +36,7 @@ class RecordedStream:
 
     def __init__(
         self,
-        queue: Queue[Any],
-        stream: db.Stream,
+        queue: Queue[str],
         streamer_name: str,
         dirty_buffer_size: int,
     ) -> None:
@@ -48,7 +47,6 @@ class RecordedStream:
         self._logger = logging.getLogger("offstream")
         self._playlist = Playlist()
         self._queue = queue
-        self._stream = stream
         self._streamer_name = streamer_name
         self._uploader = ThreadPoolExecutor(max_workers=1)
         self._workdir = TemporaryDirectory(prefix="offstream-")
@@ -58,11 +56,11 @@ class RecordedStream:
         def upload_complete(future: Future[str]) -> None:
             try:
                 stream_url = future.result()
+                self._logger.debug("Flushed %s", self._streamer_name)
             except CancelledError:  # Closing time
                 pass
             else:
-                self._stream.url = stream_url
-                self._queue.put(self._stream)
+                self._queue.put(stream_url)
 
         segment = Segment(file, size, duration)
         self._dirty_size += size
@@ -70,8 +68,8 @@ class RecordedStream:
         if self._dirty_size > self._dirty_buffer_size:
             segments, self._dirty_segments = self._dirty_segments, []
             self._dirty_size = 0
+            self._logger.info("Flushing %s", self._streamer_name)
             try:
-                self._logger.info("Flushing %s", self._streamer_name)
                 upload = self._uploader.submit(self._flush, segments)
             except RuntimeError:  # Closing time
                 pass
@@ -100,6 +98,9 @@ class RecordedStream:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
+        self._logger.debug("Closing %s", self._streamer_name, exc_info=True)
+        # TODO: Flush dirty segments when the stream ends, but not on interrupt
+        # or exception
         self._uploader.shutdown(wait=True, cancel_futures=True)
         self._ipfs.close()
         self._workdir.cleanup()

@@ -2,7 +2,7 @@ import logging
 import os
 import random
 from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
-from queue import Queue
+from queue import Empty, Queue
 from threading import Event, Lock, Thread
 from typing import IO, Any, Optional
 
@@ -26,21 +26,6 @@ def _buffer_size() -> int:
 BUFFER_SIZE = _buffer_size()
 
 
-class StreamURLUpdater(Thread):
-    def __init__(self, queue: Queue[Optional[db.Stream]]):
-        super().__init__()
-        self._queue = queue
-
-    def run(self) -> None:
-        with db.Session() as session:
-            while True:
-                if stream := self._queue.get():
-                    session.merge(stream)
-                    session.commit()
-                else:
-                    break
-
-
 class Scheduler:
     def __init__(self) -> None:
         self._closed = Event()
@@ -49,8 +34,6 @@ class Scheduler:
         self._recorder = ThreadPoolExecutor(max_workers=MAX_WORKER_THREADS)
         self._session = db.Session()
         self._streamlink = self._create_streamlink()
-        self._queue: Queue[Optional[db.Stream]] = Queue()
-        self._stream_url_updater = StreamURLUpdater(self._queue)
         self._lock = Lock()
 
     def start(self) -> None:
@@ -61,7 +44,6 @@ class Scheduler:
             except CancelledError:
                 pass
 
-        self._stream_url_updater.start()
         recording: dict[Future[None], int] = {}
         while not self._closed.is_set():
             for streamer in self._session.scalars(db.streamers()):
@@ -81,12 +63,13 @@ class Scheduler:
         self._logger.info("\nClosing, please wait")
         with self._lock:
             self._closed.set()
+            self._logger.debug("Closing %d stream readers", len(self._readers))
             for reader in self._readers:
                 reader.close()
+        self._logger.debug("Shutting down the recorder")
         self._recorder.shutdown(wait=True, cancel_futures=True)
-        self._queue.put(None)
-        self._stream_url_updater.join()
         self._session.close()
+        self._logger.debug("Scheduler is closed")
 
     def _create_streamlink(self) -> Streamlink:
         streamlink = Streamlink()
@@ -111,7 +94,7 @@ class Scheduler:
                         reader.buffer.write(chunk)
                         size += seg.write(chunk)
                 except (ConnectionError, ChunkedEncodingError) as error:
-                    print("!! Caught", error)
+                    self._logger.warn("Closing %s because of %s", streamer.name, error)
                     reader.close()
                     return
             recorded_stream.append_segment(
@@ -132,17 +115,26 @@ class Scheduler:
                     self._readers.add(reader)
                 try:
                     self._logger.info("Recording %s", streamer.name)
+                    queue: Queue[str] = Queue()
                     db_stream = db.Stream(
-                        streamer=streamer,
+                        streamer_id=streamer.id,
                         category=plugin.get_category(),
                         title=plugin.get_title(),
                     )
                     with RecordedStream(
-                        self._queue, db_stream, streamer.name, BUFFER_SIZE
-                    ) as recorded_stream:
+                        queue, streamer.name, BUFFER_SIZE
+                    ) as recorded_stream, db.Session() as session:
                         reader.writer._write = process_sequence  # HACK
                         while reader.read(-1):
-                            pass
+                            try:
+                                stream_url = queue.get(block=False)
+                            except Empty:
+                                pass
+                            else:
+                                self._logger.debug("Updating %s", streamer.name)
+                                db_stream.url = stream_url
+                                session.add(db_stream)
+                                session.commit()
                 finally:
                     with self._lock:
                         self._readers.remove(reader)
