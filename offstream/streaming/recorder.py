@@ -30,7 +30,7 @@ class Recorder:
         self._session = db.Session()
         self._streamlink = self._create_streamlink()
 
-    def start(self) -> None:
+    def start(self, loop: bool = True) -> None:
         while not self._closed.is_set():
             for streamer in self._session.scalars(db.streamers()):
                 with self._lock:
@@ -43,6 +43,8 @@ class Recorder:
                     self._executor.submit(self._record_streamer, streamer)
                 except RuntimeError:  # Closing time
                     break
+            if not loop:
+                break
             self._closed.wait(self.check_interval)
 
     def close(self) -> None:

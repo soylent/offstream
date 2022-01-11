@@ -11,7 +11,7 @@ import click
 from flask.cli import AppGroup
 
 from offstream import db
-from offstream.recorder import Recorder
+from offstream.streaming import Recorder
 
 cli = AppGroup("offstream")
 

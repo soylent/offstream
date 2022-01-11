@@ -1,4 +1,4 @@
-import offstream.recorder.hls as hls
+import offstream.streaming.hls as hls
 
 
 def test_playlist(m3u8):
