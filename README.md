@@ -74,12 +74,6 @@ The following environment variables are supported.
 
 ## FAQ
 
-- Q. There is a warning:
-  `VersionMismatch: Unsupported daemon version '0.9.1' (not in range: 0.5.0 ≤ … < 0.9.0)`
-
-  A. It's a benign warning, please ignore it.
-  TODO: hide the warning - then there's no need to explain anything
-
 - Q. keepalive request failed for 'https://bafybeie3v6lomkfti2b4zsa4yj35nypojllvjrzpbzyxhn5tkfoqaswmbm.ipfs.infura-ipfs.io/18846.ts'
 
 ## Development
