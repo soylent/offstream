@@ -65,11 +65,11 @@ The following environment variables are supported.
 
 - `OFFSTREAM_AWAKE_END_HOUR`
 - `OFFSTREAM_AWAKE_START_HOUR`
-- `OFFSTREAM_BUFFER_SIZE`
+- `OFFSTREAM_FLUSH_THRESHOLD`
 - `OFFSTREAM_CHECK_INTERVAL_SECONDS`
 - `OFFSTREAM_IPFS_API_ADDR`
 - `OFFSTREAM_IPFS_GATEWAY_URI_TEMPLATE`
-- `OFFSTREAM_MAX_WORKER_THREADS`
+- `OFFSTREAM_MAX_CONCURRENT_RECORDERS`
 - `TZ` Your preferred timezone, e.g. `America/New_York`. Please see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
 
 ## FAQ

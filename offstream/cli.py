@@ -11,7 +11,7 @@ import click
 from flask.cli import AppGroup
 
 from offstream import db
-from offstream.recorder import Scheduler
+from offstream.recorder import Recorder
 
 cli = AppGroup("offstream")
 
@@ -36,13 +36,13 @@ def ping() -> None:
 @cli.command("record")
 def record() -> None:
     """Start stream recorder."""
-    def shutdown(*args: Any) -> None:
-        scheduler.close()
+    def close_recorder(*args: Any) -> None:
+        recorder.close()
 
-    scheduler = Scheduler()
-    signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
-    scheduler.start()
+    recorder = Recorder()
+    signal.signal(signal.SIGINT, close_recorder)
+    signal.signal(signal.SIGTERM, close_recorder)
+    recorder.start()
 
 
 @cli.command("create")

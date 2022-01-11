@@ -4,7 +4,7 @@ from typing import List, NamedTuple, Optional
 # See rfc8216 and https://developer.apple.com/documentation/http_live_streaming
 
 
-class Segment(NamedTuple):
+class _Segment(NamedTuple):
     url: str
     duration: float
     title: Optional[str]
@@ -20,10 +20,10 @@ class Playlist:
         self.version = version
         self.playlist_type = playlist_type.upper() if playlist_type else None
         self.start_time_offset = start_time_offset
-        self.segments: List[Segment] = []
+        self.segments: List[_Segment] = []
 
     def append(self, url: str, duration: float, title: str = "") -> None:
-        segment = Segment(url, duration, title)
+        segment = _Segment(url, duration, title)
         self.segments.append(segment)
 
     def write(self, path: Path) -> None:
