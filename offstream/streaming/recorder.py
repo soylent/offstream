@@ -171,11 +171,11 @@ class _Worker:
                     pass
 
     def _append_segment(self, file: str, size: int, duration: float) -> None:
+        if self._dirty_size + size > self._flush_threshold:
+            self._flush()
         segment = _Segment(file, size, duration)
         self._dirty_size += size
         self._dirty_segments.append(segment)
-        if self._dirty_size > self._flush_threshold:
-            self._flush()
 
     def _flush(self) -> None:
         def _upload_complete(future: Future[str]) -> None:
