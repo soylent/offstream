@@ -26,8 +26,9 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql.expression import Select
 from werkzeug.security import generate_password_hash
 
-uri = os.environ["DATABASE_URL"].replace("postgres://", "postgresql://", 1)
-engine = create_engine(uri, future=True)
+_uri = os.environ["DATABASE_URL"].replace("postgres://", "postgresql://", 1)
+_echo = os.getenv("FLASK_ENV") == "development"
+engine = create_engine(_uri, future=True, echo=_echo)
 
 Session = sessionmaker(engine, future=True)
 
