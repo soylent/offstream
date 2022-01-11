@@ -204,8 +204,12 @@ class _Worker:
         _logger.info("Flushing %s", self._streamer.name)
         segments, self._dirty_segments = self._dirty_segments, []
         self._dirty_size = 0
-        upload = self._executor.submit(self._upload_segments, segments)
-        upload.add_done_callback(_upload_complete)
+        try:
+            upload = self._executor.submit(self._upload_segments, segments)
+        except RuntimeError:  # Closing time
+            pass
+        else:
+            upload.add_done_callback(_upload_complete)
 
     def _upload_segments(self, segments: list[_Segment]) -> str:
         files = [self._workdir_path / segment.file for segment in segments]
