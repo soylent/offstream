@@ -14,6 +14,11 @@ from streamlink import Streamlink  # type: ignore
 
 from .hls import Playlist
 
+# HACK: Suppress a version mismatch warning.
+# This can be removed once ipfshttpclient is updated.
+# We can't use warnings.catch_warnings() because it is not thread-safe.
+ipfshttpclient.client.assert_version = lambda *args: True
+
 MAX_CONCURRENT_RECORDERS = int(os.getenv("OFFSTREAM_MAX_CONCURRENT_RECORDERS", "8"))
 
 _logger = logging.getLogger("offstream")
