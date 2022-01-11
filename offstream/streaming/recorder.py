@@ -51,11 +51,11 @@ class Recorder:
         _logger.info("\nClosing, please wait")
         with self._lock:
             self._closed.set()
-            _logger.debug("Closing %d stream reader(s)", len(self._recording))
+            _logger.info("Closing %d stream reader(s)", len(self._recording))
             for worker in self._recording.values():
                 if worker is not None:
                     worker.close()
-        _logger.debug("Shutting down executor")
+        _logger.info("Shutting down executor")
         self._executor.shutdown(wait=True, cancel_futures=True)
         self._session.close()
 
@@ -188,7 +188,7 @@ class _Worker:
                     "Exception while flushing %s", self._streamer.name, exc_info=True
                 )
             else:
-                _logger.debug("Flushed %s", self._streamer.name)
+                _logger.info("Flushed %s", self._streamer.name)
 
         _logger.info("Flushing %s", self._streamer.name)
         segments, self._dirty_segments = self._dirty_segments, []
@@ -219,7 +219,7 @@ class _Worker:
         with self._lock:
             self._closed = True
             if self._reader:
-                _logger.debug("Closing %s", self._streamer.name)
+                _logger.info("Closing %s", self._streamer.name)
                 self._reader.close()
                 self._reader = None
 
