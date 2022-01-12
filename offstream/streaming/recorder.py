@@ -97,7 +97,7 @@ class _Segment(NamedTuple):
 
 
 class _Worker:
-    ipfs_request_size_limit = 100 * 2 ** 20  # 100 MiB
+    ipfs_request_size_limit = 10 ** 8  # 100M
     ipfs_api_addr = os.getenv(
         "OFFSTREAM_IPFS_API_ADDR",
         "/dns/ipfs.infura.io/tcp/5001/https",
@@ -186,7 +186,7 @@ class _Worker:
 
     def _append_segment(self, file: str, size: int, duration: float) -> None:
         # Handle the case when the threshold is large enough so that we
-        # do not need go exceed it.
+        # do not need to exceed it.
         if self._dirty_size > 0 and self._dirty_size + size > self._flush_threshold:
             self._flush()
         segment = _Segment(file, size, duration)
