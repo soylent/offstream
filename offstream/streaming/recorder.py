@@ -66,7 +66,8 @@ class Recorder:
 
     def _create_streamlink(self) -> Streamlink:
         streamlink = Streamlink()
-        # We need to enable this option to be able to access segment chunks
+        # We need to enable this option to be able to access segment
+        # chunks
         streamlink.set_option("hls-segment-stream-data", True)
         # TODO: ENV?
         streamlink.set_plugin_option("twitch", "disable_ads", True)
@@ -156,7 +157,15 @@ class _Worker:
         if streams := plugin.streams(
             sorting_excludes=[f">{self._streamer.max_quality}"]
         ):
-            stream = streams["best"]
+            try:
+                stream = streams["best"]
+            except KeyError:
+                _logger.warning(
+                    "No %s streams with max quality %s found",
+                    self._streamer.name,
+                    self._streamer.max_quality,
+                )
+                return
             stream.force_restart = True
             with stream.open() as reader:
                 with self._lock:
