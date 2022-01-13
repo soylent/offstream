@@ -8,20 +8,21 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash
 
 from offstream import db
-from offstream.cli import cli
+from offstream.cli import main
 
 app = Flask("offstream", static_url_path="/")
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
-app.cli.add_command(cli)
+app.cli.add_command(main)
 
 # TODO: Tests - test the recorder package
-# - non existent streamer
 # - no internet connection before
 # - no internet connection while recording
 
+# TODO: Streams don't open on iOS
 # TODO: Refactor process_sequence - define my own worker class?
 # TODO: Distribute as a package? Easy to install and run on any server
-
+# TODO: When a stream ends, this error occurs indefinitely
+# Failed to reload playlist: Unable to open URL: https://video-weaver.ord03.hls.ttvnw.net/v1/playlist/CpQE3n8aIVIv4MWfbjTli_AhPW3hWuLDPBvj24uLcojVTyD3WRUjlOdmAntDTIu-UR2WiILz8-k_zqJ5eLZYtFNBYyGbcfg7CN72qzqXfAGG899ZgzmAPmoqHN2E8AMe9QgFax8LapmwlygvclnYxby6GSszZ_mUxbQ4IQU9IwGSJcXiPX2rFI9OSlAt5I4NjZWAd-GNHyrmeIwTMEKelGhcdtja_sZLMzhBNR62T23mzfQB01slO9B_nKYVwDeDAir0X3P6Qd2AK_55FkCx0te8HUzia5mZFFY3-YEU4QiY8ia1lpKDbkvdFKutV09m1x7oYfEtpChcoGEf-31mu5a7fZW4nlb_yGwNw3MyGdAn6jExoTZR-QlaZjcJHi-46Wi8LSP3ki8_gj_-A1u-eP7I4B9bo8ooL5TJ11QoqP33-uUZsfxuQO5ZTH6qHQLva-hZBIF0w6_KB_-QVi_LH-t8qY5Wm03BcnThVe6Zy7vreaec0i2sc5IAQ6iBrMx_Bbur2hN_Ks82bgUVBNfptZlb4Lp9oExHgfruyxBXQCl79b207-RzmqZLPXsjIzxwwAEFpaiTvQAGaf2xpKbUE27e5Dpmxuc2EggYoJy-I-bI8NL0Z0q9_jBs8RDIA0iT7bySDhdIFmFXf1yUc5khl20jHpEdBQ1I5TICGgw_OnLZ-rH0O-LbI2WZlvmsItWBhVDtdnDjYhoMqy7CDhESwZw_DfYDIAEqCXVzLWVhc3QtMjDQAg.m3u8 (404 Client Error: Not Found for url: https://video-weaver.ord03.hls.ttvnw.net/v1/playlist/CpQE3n8aIVIv4MWfbjTli_AhPW3hWuLDPBvj24uLcojVTyD3WRUjlOdmAntDTIu-UR2WiILz8-k_zqJ5eLZYtFNBYyGbcfg7CN72qzqXfAGG899ZgzmAPmoqHN2E8AMe9QgFax8LapmwlygvclnYxby6GSszZ_mUxbQ4IQU9IwGSJcXiPX2rFI9OSlAt5I4NjZWAd-GNHyrmeIwTMEKelGhcdtja_sZLMzhBNR62T23mzfQB01slO9B_nKYVwDeDAir0X3P6Qd2AK_55FkCx0te8HUzia5mZFFY3-YEU4QiY8ia1lpKDbkvdFKutV09m1x7oYfEtpChcoGEf-31mu5a7fZW4nlb_yGwNw3MyGdAn6jExoTZR-QlaZjcJHi-46Wi8LSP3ki8_gj_-A1u-eP7I4B9bo8ooL5TJ11QoqP33-uUZsfxuQO5ZTH6qHQLva-hZBIF0w6_KB_-QVi_LH-t8qY5Wm03BcnThVe6Zy7vreaec0i2sc5IAQ6iBrMx_Bbur2hN_Ks82bgUVBNfptZlb4Lp9oExHgfruyxBXQCl79b207-RzmqZLPXsjIzxwwAEFpaiTvQAGaf2xpKbUE27e5Dpmxuc2EggYoJy-I-bI8NL0Z0q9_jBs8RDIA0iT7bySDhdIFmFXf1yUc5khl20jHpEdBQ1I5TICGgw_OnLZ-rH0O-LbI2WZlvmsItWBhVDtdnDjYhoMqy7CDhESwZw_DfYDIAEqCXVzLWVhc3QtMjDQAg.m3u8)
 
 @app.get("/")
 def root() -> ResponseReturnValue:
@@ -33,7 +34,6 @@ def latest_stream(name: str) -> ResponseReturnValue:
     with db.Session() as session:
         if stream := session.scalars(db.latest_streams(name)).first():
             return {"url": stream.url}, 302, {"location": stream.url}
-
     abort(404, "No streams found")
 
 
@@ -67,6 +67,7 @@ def delete_streamer(name: str) -> ResponseReturnValue:
         return _serialize_streamer(streamer)
 
 
+# TODO: Make limit a query param
 
 @app.get("/rss")
 def rss(limit: int = 20) -> ResponseReturnValue:

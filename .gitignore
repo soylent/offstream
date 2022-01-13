@@ -1,4 +1,6 @@
 *.db
+.coverage
 .env
 __pycache__/
+dist/
 venv/

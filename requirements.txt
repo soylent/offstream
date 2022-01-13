@@ -1,7 +1,1 @@
-flask ~= 2.0
-gunicorn ~= 20.0
-ipfshttpclient ~= 0.8.0a2
-psycopg2 ~= 2.9
-sqlalchemy[mypy] ~= 1.4
-streamlink ~= 3.0
-types-requests ~= 2.26
+offstream==0.1.0

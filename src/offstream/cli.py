@@ -13,10 +13,10 @@ from flask.cli import AppGroup
 from offstream import db
 from offstream.streaming import Recorder
 
-cli = AppGroup("offstream")
+main = AppGroup("offstream")
 
 
-@cli.command("ping")
+@main.command("ping")
 def ping() -> None:
     """Ping itself to prevent idling."""
     start_hour = int(os.getenv("OFFSTREAM_AWAKE_START_HOUR", "0"))
@@ -33,7 +33,7 @@ def ping() -> None:
         print("Skipped")
 
 
-@cli.command("record")
+@main.command("record")
 def record() -> None:
     """Start stream recorder."""
     def close_recorder(*args: Any) -> None:
@@ -45,13 +45,13 @@ def record() -> None:
     recorder.start()
 
 
-@cli.command("create")
+@main.command("create")
 def create() -> None:
     """Create db tables."""
     db.Base.metadata.create_all(db.engine)
 
 
-@cli.command("setup")
+@main.command("setup")
 @click.option("-u", "--app-url", help="App URL to ping", required=True)
 @click.pass_context
 def setup(ctx: click.core.Context, app_url: str) -> None:
