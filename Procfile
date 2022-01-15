@@ -1,2 +1,2 @@
-web: flask offstream record & gunicorn app
-clock: flask offstream ping
+web: offstream --host="" --port=$PORT
+clock: offstream ping

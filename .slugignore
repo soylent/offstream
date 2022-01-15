@@ -1,2 +1,7 @@
 .flaskenv
+LICENSE
+README.md
+app.json
+setup.cfg
+src/
 tests/

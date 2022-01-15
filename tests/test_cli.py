@@ -5,6 +5,16 @@ from offstream import db
 from sqlalchemy import inspect
 
 
+@pytest.mark.parametrize("command", [("offstream"), ("offstream", "record")])
+def test_main(runner, command):
+    with patch("offstream.cli.Recorder") as recorder:
+        recorder.return_value.start.return_value = None
+        result = runner.invoke(args=command)
+
+    assert result.exit_code == 0
+    assert not result.output
+
+
 def test_ping_when_there_are_streamers(runner, stream, settings):
     with patch("offstream.cli.urlopen") as urlopen:
         urlopen.return_value.__enter__.return_value.msg = "OK"

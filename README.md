@@ -6,14 +6,14 @@ Record your favorite twitch streams automatically and watch them later.
 - Streams are recorded as is, without re-transcoding.
 - Recordings are never muted.
 - Ads are optional.
-- Completely free. You can deploy it to Heroku or run on your own server.
+- Completely free. You can deploy it to Heroku or run it on your own server.
 - Recordings are stored on IPFS.
-- TODO: Feed of all recordings in the RSS format. It works with
-  youtube-dl and VLC.
+- RSS feed of all recordings is available. It can be consumed by youtube-dl,
+  VLC, and other feed readers.
 - TODO: No playback performance issues
-- TODO: Good option if you have slow or unreliable Internet connection.
-- TODO: Recording is available while the recording is in progress. The delay is
-  small and configurable.
+- Streams are available while the recording is in progress. The delay is small
+  and configurable.
+- This is a good option if you have slow or unreliable Internet connection.
 
 ## Installing
 
@@ -21,8 +21,8 @@ To deploy the app, click the button below and follow the instructions.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-Once the app is ready, you will get your credentials to control the app. Please
-add them to your `~/.netrc` file.
+Once the app is ready, you will get your credentials to control the app. Add
+them to your `~/.netrc` file (or `_netrc` on Windows).
 
 ```
 machine your-app-name.herokuapp.com
@@ -37,6 +37,9 @@ $ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=garybernhar
 $ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=esl_sc2 -d max_quality=720p60
 ```
 
+Typical stream quality options are
+`audio_only`, `160p`, `360p`, `480p`, `720p`, `720p60`, `1080p60`, `best`.
+
 When any of the streamers is live, the app will record the stream.
 
 Finally, to watch the latest recording, open the following URL in mpv, VLC,
@@ -48,9 +51,12 @@ $ mpv https://your-app-name.herokuapp.com/latest/esl_sc2
 
 An RSS feed of all recordings is available at `https://your-app-name.herokuapp.com/rss`.
 
-## Summary
+TODO: To download a stream
+\$ ffmpeg -i https://your-app-name.herokuapp.com/latest/someone -c copy rec.mp4
 
-- `POST /streamers`
+## API
+
+- `POST /streamers -d name=<name> -d max_quality=<quality>`
   Track a new streamer.
 - `DELETE /streamers/<name>`
   Delete the streamer. WARNING: Deletes associated streams too.
@@ -74,6 +80,8 @@ The following environment variables are supported.
 
 ## FAQ
 
+TODO
+
 - Q. keepalive request failed for 'https://bafybeie3v6lomkfti2b4zsa4yj35nypojllvjrzpbzyxhn5tkfoqaswmbm.ipfs.infura-ipfs.io/18846.ts'
 
 ## Development
@@ -85,7 +93,7 @@ The following environment variables are supported.
    ```
 1. Install dependencies.
    ```sh
-   pip install -r requirements-test.txt -c constraints.txt
+   pip install -e .[test]
    ```
 1. Run tests.
    ```sh
@@ -97,11 +105,7 @@ The following environment variables are supported.
    ```
 1. Start the app.
    ```sh
-   flask run
-   ```
-1. Start the stream recorder.
-   ```sh
-   flask offstream record
+   flask offstream
    ```
 
 ## Flask commands
@@ -114,8 +118,9 @@ $ flask offstream --help
 
 | command                  | description                    |
 | ------------------------ | ------------------------------ |
-| `flask run`              | Start the app.                 |
+| `flask run`              | Start API.                     |
+| `flask offstream`        | Start API and stream recorder. |
 | `flask offstream record` | Start stream recorder.         |
-| `flask offstream ping`   | Ping itself to prevent idling. |
-| `flask offstream setup`  | Setup the database.            |
 | `flask offstream create` | Create db tables.              |
+| `flask offstream setup`  | Setup the database.            |
+| `flask offstream ping`   | Ping itself to prevent idling. |

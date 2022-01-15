@@ -57,7 +57,7 @@ def twitch():
 
 def test_start_with_one_streamer(streamer, twitch, ipfs_add):
     recorder = Recorder()
-    recorder.start(loop=False)
+    recorder.start(_loop=False)
 
     stream = streamer.streams[0]
 
@@ -71,7 +71,7 @@ def test_start_with_non_existent_streamer(streamer, twitch, session):
     twitch.streams.return_value = {}
 
     recorder = Recorder()
-    recorder.start(loop=False)
+    recorder.start(_loop=False)
 
     assert not session.scalars(select(db.Stream)).all()
 
@@ -82,14 +82,14 @@ def test_start_with_no_acceptable_streams(streamer, twitch, session):
     }
 
     recorder = Recorder()
-    recorder.start(loop=False)
+    recorder.start(_loop=False)
 
     assert not session.scalars(select(db.Stream)).all()
 
 
 def test_start_with_no_streamers(setup_db, session):
     recorder = Recorder()
-    recorder.start(loop=False)
+    recorder.start(_loop=False)
 
     assert not session.scalars(select(db.Stream)).all()
 

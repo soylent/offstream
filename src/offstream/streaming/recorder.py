@@ -1,6 +1,6 @@
 import logging
 import os
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import CancelledError, Future, ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event, Lock
@@ -35,7 +35,17 @@ class Recorder:
         self._session = db.Session()
         self._streamlink = self._create_streamlink()
 
-    def start(self, loop: bool = True) -> None:
+    def start(self, _loop: bool = True) -> None:
+        def _recording_complete(future: Future[None]) -> None:
+            try:
+                future.result()
+            except CancelledError:  # Closing time
+                _logger.info("Canceled recording %s", streamer.name)
+            except Exception:
+                _logger.warn(
+                    "Exception while recording %s", streamer.name, exc_info=True
+                )
+
         while not self._closed.is_set():
             for streamer in self._session.scalars(db.streamers()):
                 with self._lock:
@@ -43,12 +53,13 @@ class Recorder:
                         continue
                     self._recording[streamer.id] = None
                 _logger.info("Checking %s", streamer.name)
-                self._session.expunge(streamer)
                 try:
-                    self._executor.submit(self._record_streamer, streamer)
+                    future = self._executor.submit(self._record_streamer, streamer)
                 except RuntimeError:  # Closing time
                     break
-            if not loop:
+                else:
+                    future.add_done_callback(_recording_complete)
+            if not _loop:
                 break
             self._closed.wait(self.check_interval)
 
@@ -61,7 +72,7 @@ class Recorder:
                 if worker is not None:
                     worker.close()
         _logger.info("Shutting down executor")
-        self._executor.shutdown(wait=True, cancel_futures=True)
+        self._executor.shutdown(cancel_futures=True)
         self._session.close()
 
     def _create_streamlink(self) -> Streamlink:
@@ -203,6 +214,8 @@ class _Worker:
                 assert self._stream
                 self._stream.url = future.result()
                 self._session.commit()
+            except CancelledError:  # Closing time
+                _logger.info("Canceled flushing %s", self._streamer.name)
             except Exception:
                 _logger.warning(
                     "Exception while flushing %s", self._streamer.name, exc_info=True
@@ -240,6 +253,7 @@ class _Worker:
         return self.ipfs_gateway_uri_template.format(cid=cid, path=path)
 
     def close(self) -> None:
+        self._ipfs.close()
         with self._lock:
             self._closed = True
             if self._reader:
@@ -253,11 +267,10 @@ class _Worker:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        self.close()
-        if self._dirty_size > 0:
+        if not self._closed and self._dirty_size > 0:
             self._flush()
-        self._executor.shutdown()
-        self._ipfs.close()
+        self.close()
+        self._executor.shutdown(cancel_futures=True)
         self._session.close()
         self._workdir.cleanup()
 

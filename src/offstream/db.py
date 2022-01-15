@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 import string
+from pathlib import Path
 from typing import Optional
 
 from click import get_app_dir
@@ -27,13 +28,20 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql.expression import Select
 from werkzeug.security import generate_password_hash
 
-_default_path = os.path.join(
-    get_app_dir(app_name="offstream", roaming=False, force_posix=True), "offstream.db"
-)
-_uri = os.getenv("DATABASE_URL", f"sqlite://{_default_path}")
-_uri = _uri.replace("postgres://", "postgresql://", 1)
+
+def _uri(name: str = "offstream") -> str:
+    if uri := os.getenv("DATABASE_URL"):
+        uri = uri.replace("postgres://", "postgresql://", 1)
+    else:
+        app_dir = Path(get_app_dir(app_name=name, roaming=False, force_posix=True))
+        app_dir.mkdir(exist_ok=True)
+        path = app_dir / f"{name}.db"
+        uri = f"sqlite:///{path}"
+    return uri
+
+
 _echo = os.getenv("FLASK_ENV") == "development"
-engine = create_engine(_uri, future=True, echo=_echo)
+engine = create_engine(_uri(), future=True, echo=_echo)
 
 Session = sessionmaker(engine, future=True)
 
