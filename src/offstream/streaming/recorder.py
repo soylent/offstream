@@ -42,7 +42,7 @@ class Recorder:
             except CancelledError:  # Closing time
                 _logger.info("Canceled recording %s", streamer.name)
             except Exception:
-                _logger.warn(
+                _logger.warning(
                     "Exception while recording %s", streamer.name, exc_info=True
                 )
 
@@ -77,10 +77,8 @@ class Recorder:
 
     def _create_streamlink(self) -> Streamlink:
         streamlink = Streamlink()
-        # We need to enable this option to be able to access segment
-        # chunks
+        # This option is on so that we can access segment chunks.
         streamlink.set_option("hls-segment-stream-data", True)
-        # TODO: ENV?
         streamlink.set_plugin_option("twitch", "disable_ads", True)
         streamlink.set_plugin_option("twitch", "disable_hosting", True)
         streamlink.set_plugin_option("twitch", "disable_reruns", True)
@@ -150,7 +148,8 @@ class _Worker:
             segfile = self._workdir_path / f"{sequence.num}.ts"
             with segfile.open(mode="wb") as seg:
                 try:
-                    # TODO: reader.writer.WRITE_CHUNK_SIZE not yet released
+                    # TODO: Change to reader.writer.WRITE_CHUNK_SIZE
+                    # when a new version of streamlink is released.
                     for chunk in response.iter_content(8192):
                         reader.buffer.write(chunk)
                         size += seg.write(chunk)
@@ -191,20 +190,23 @@ class _Worker:
                 )
                 self._session.add(self._stream)
                 reader.writer._write = _process_sequence  # HACK
-                # TODO: Handle OSError (read timeout)?
-                while reader.read(-1):
-                    pass
+                # TODO: Add a test: Handle OSError (read timeout)
+                try:
+                    while reader.read(-1):
+                        pass
+                except OSError as error:
+                    _logger.warning(
+                        "Closing %s because of %s", self._streamer.name, error
+                    )
 
     def _append_segment(self, file: str, size: int, duration: float) -> None:
-        # Handle the case when the threshold is large enough so that we
-        # do not need to exceed it.
+        # When the threshold is large enough we do not want to exceed it.
         if self._dirty_size > 0 and self._dirty_size + size > self._flush_threshold:
             self._flush()
         segment = _Segment(file, size, duration)
         self._dirty_size += size
         self._dirty_segments.append(segment)
-        # Handle the case when the threshold is so small that we have to
-        # exceed it.
+        # When the threshold is too small we will exceed it.
         if self._dirty_size > self._flush_threshold:
             self._flush()
 

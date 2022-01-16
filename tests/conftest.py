@@ -36,7 +36,7 @@ def runner(setup_db):
 
 @pytest.fixture
 def settings(session):
-    settings, password = db.settings(app_url="https://example.org/")
+    settings, password = db.settings(ping_url="https://example.org/")
     session.add(settings)
     session.commit()
     return settings, password

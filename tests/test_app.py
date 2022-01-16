@@ -62,14 +62,6 @@ def test_create_streamer_dupliacate(client, auth):
     assert response.json["error"]["description"] == "Duplicate streamer URL"
 
 
-def test_create_streamer_auth(client, bad_auth, settings):
-    response = client.post("/streamers", auth=bad_auth)
-
-    assert response.status_code == 401
-    assert response.json["error"]["name"] == "unauthorized"
-    assert response.json["error"]["description"] == "Authentication failed"
-
-
 @pytest.mark.parametrize("name", [None, ""])
 def test_create_streamer_with_invalid_name(client, name, auth):
     response = client.post("/streamers", data={"name": name}, auth=auth)
@@ -87,7 +79,10 @@ def test_create_streamer_with_invalid_max_quality(client, max_quality, auth):
 
     assert response.status_code == 422
     assert response.json["error"]["name"] == "unprocessable entity"
-    assert response.json["error"]["description"] == f"Invalid max stream quality: {max_quality}"
+    assert (
+        response.json["error"]["description"]
+        == f"Invalid max stream quality: {max_quality}"
+    )
 
 
 def test_delete_streamer(client, stream, session, auth):
@@ -113,13 +108,42 @@ def test_delete_not_found(client, auth):
     assert response.json["error"]["description"] == "Streamer not found"
 
 
-def test_delete_streamer_auth(client, stream, bad_auth):
-    streamer = stream.streamer
-    response = client.delete(f"/streamers/{streamer.name}", auth=bad_auth)
+def test_update_ping_hours(client, auth, settings):
+    data = {"ping_start_hour": 1, "ping_end_hour": 2}
+    response = client.post("/settings", auth=auth, data=data)
+
+    assert response.status_code == 200
+    assert response.json["ping_start_hour"] == data["ping_start_hour"]
+    assert response.json["ping_end_hour"] == data["ping_end_hour"]
+
+
+@pytest.mark.parametrize("param", ["ping_start_hour", "ping_end_hour"])
+@pytest.mark.parametrize("value", [-1, 25, "x"])
+def test_update_ping_hours_with_invalid_values(client, auth, param, value):
+    response = client.post("/settings", auth=auth, data={param: value})
+
+    assert response.status_code == 422
+    assert response.json["error"]["name"] == "unprocessable entity"
+    assert "Invalid hour" in response.json["error"]["description"]
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        {"method": "POST", "path": "/streamers"},
+        {"method": "DELETE", "path": "/streamers/anything"},
+        {"method": "POST", "path": "/settings"},
+    ],
+)
+def test_auth(client, bad_auth, settings, endpoint):
+    response = client.open(**endpoint, auth=bad_auth)
 
     assert response.status_code == 401
     assert response.json["error"]["name"] == "unauthorized"
     assert response.json["error"]["description"] == "Authentication failed"
+
+
+# TODO: test_auth_when_no_settings(client, bad_auth):
 
 
 @pytest.mark.parametrize("fixture", [None, "stream"])

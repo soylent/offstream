@@ -1,3 +1,4 @@
 --index-url https://pypi.fury.io/soylent/
 --extra-index-url https://pypi.org/simple/
-offstream[pg]~=0.1.dev4
+offstream ~= 0.1.dev6
+psycopg2 ~= 2.9

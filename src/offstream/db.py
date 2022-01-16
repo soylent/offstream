@@ -51,6 +51,9 @@ Base = declarative_base()
 class Streamer(Base):
     __tablename__ = "streamers"
 
+    _max_quality_re = re.compile(r"\d+p(\d+)?|[a-z_]+")
+    _uri_template = "https://twitch.tv/{name}"
+
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
     max_quality = Column(String, default="best", nullable=False)
@@ -61,21 +64,17 @@ class Streamer(Base):
             raise ValueError("Missing streamer name")
         return name.lower()
 
-    _MAX_QUALITY_RE = re.compile(r"\d+p(\d+)?|[a-z_]+")
-
     @validates("max_quality")  # type: ignore
-    def validate_max_quality(self, key: str, max_quality: str) -> str:
+    def validate_quality(self, key: str, max_quality: str) -> str:
         if max_quality is not None and not re.fullmatch(
-            self._MAX_QUALITY_RE, max_quality
+            self._max_quality_re, max_quality
         ):
             raise ValueError(f"Invalid max stream quality: {max_quality}")
         return max_quality
 
-    _URI_TEMPLATE = "https://twitch.tv/{name}"
-
     @hybrid_property
     def url(self) -> str:
-        return self._URI_TEMPLATE.format(name=self.name)
+        return self._uri_template.format(name=self.name)
 
 
 class Stream(Base):
@@ -99,7 +98,22 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     username = Column(String, nullable=False)
     password = Column(String, nullable=False)
-    app_url = Column(String, nullable=False)
+    ping_url = Column(String, nullable=True)
+    ping_start_hour = Column(Integer, nullable=True)
+    ping_end_hour = Column(Integer, nullable=True)
+
+    @validates("ping_start_hour", "ping_end_hour")  # type: ignore
+    def validate_hour(self, key: str, value: Optional[str]) -> Optional[int]:
+        if value is None:
+            return value
+        try:
+            hour = int(value)
+        except ValueError as error:
+            raise ValueError(f"Invalid hour: {value}") from error
+        else:
+            if 0 <= hour <= 24:
+                return hour
+        raise ValueError(f"Invalid hour: {value}")
 
 
 def latest_streams(name: Optional[str] = None, limit: Optional[int] = None) -> Select:
@@ -115,7 +129,7 @@ def latest_streams(name: Optional[str] = None, limit: Optional[int] = None) -> S
 
 
 def streamers() -> Select:
-    return select(Streamer)  # .where(Streamer.id == 6)
+    return select(Streamer)
 
 
 def streamer(name: str) -> Select:
@@ -123,13 +137,13 @@ def streamer(name: str) -> Select:
 
 
 def settings(
-    app_url: str,
     username: str = "offstream",
     passowrd_alphabet: str = string.ascii_lowercase,
     password_len: int = 9,
+    ping_url: Optional[str] = None,
 ) -> tuple[Settings, str]:
     password = "".join(secrets.choice(passowrd_alphabet) for _ in range(password_len))
     settings_ = Settings(
-        app_url=app_url, username=username, password=generate_password_hash(password)
+        username=username, password=generate_password_hash(password), ping_url=ping_url
     )
     return settings_, password
