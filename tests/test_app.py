@@ -1,6 +1,7 @@
 import pytest
-from offstream import db
 from sqlalchemy import inspect
+
+from offstream import db
 
 
 def test_root(client):

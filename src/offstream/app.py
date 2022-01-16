@@ -3,6 +3,7 @@ from typing import Any
 
 from flask import Flask, abort, make_response, render_template, request
 from flask.typing import ResponseReturnValue
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash
@@ -58,7 +59,8 @@ def create_streamer() -> ResponseReturnValue:
 def delete_streamer(name: str) -> ResponseReturnValue:
     require_auth()
     with db.Session() as session:
-        streamer = session.scalars(db.streamer(name)).one_or_none()
+        query = select(db.Streamer).where(db.Streamer.name == name)
+        streamer = session.scalars(query).one_or_none()
         if not streamer:
             abort(404, "Streamer not found")
         session.delete(streamer)

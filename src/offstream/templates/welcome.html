@@ -9,28 +9,28 @@
       <dd>{{ password }}</dd>
     </dl>
     <p>
-      Please add the following entry to your <code>~/.netrc</code> file (or
-      <code>_netrc</code> on Windows).
+      I recommend adding the following entry to your <code>~/.netrc</code> file
+      (or <code>_netrc</code> on Windows).
     </p>
     <pre>
 machine {{ request.host }}
-    login {{ username }}
-    password {{ password }}
+  login {{ username }}
+  password {{ password }}
 </pre
     >
     <p>Next, add your favorite streamers.</p>
     <pre>
-$ curl {{ request.url }}/streamers --netrc -d name=garybernhardt
-$ curl {{ request.url }}/streamers --netrc -d name=esl_sc2 -d max_quality=720p60
+$ curl {{ request.host_url }}streamers --netrc -d name=garybernhardt
+$ curl {{ request.host_url }}streamers --netrc -d name=esl_sc2 -d max_quality=720p60
 </pre
     >
-    <p>When any of the streamers is live, the app will record the stream.</p>
+    <p>When any of the streamers goes live, the app will record the stream.</p>
     <p>
       Finally, to watch the latest recording, open the following URL in mpv,
       VLC, QuickTime, or any other video player.
     </p>
     <pre>
-$ mpv {{ request.url }}/latest/esl_sc2
+$ mpv {{ request.host_url }}latest/esl_sc2
 </pre
     >
     <p>

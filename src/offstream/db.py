@@ -29,13 +29,13 @@ from sqlalchemy.sql.expression import Select
 from werkzeug.security import generate_password_hash
 
 
-def _uri(name: str = "offstream") -> str:
+def _uri(app_name: str = "offstream") -> str:
     if uri := os.getenv("DATABASE_URL"):
         uri = uri.replace("postgres://", "postgresql://", 1)
     else:
-        app_dir = Path(get_app_dir(app_name=name, roaming=False, force_posix=True))
+        app_dir = Path(get_app_dir(app_name, roaming=False, force_posix=True))
         app_dir.mkdir(exist_ok=True)
-        path = app_dir / f"{name}.db"
+        path = app_dir / f"{app_name}.db"
         uri = f"sqlite:///{path}"
     return uri
 
@@ -99,8 +99,8 @@ class Settings(Base):
     username = Column(String, nullable=False)
     password = Column(String, nullable=False)
     ping_url = Column(String, nullable=True)
-    ping_start_hour = Column(Integer, nullable=True)
-    ping_end_hour = Column(Integer, nullable=True)
+    ping_start_hour = Column(Integer, nullable=False, default=0)
+    ping_end_hour = Column(Integer, nullable=False, default=24)
 
     @validates("ping_start_hour", "ping_end_hour")  # type: ignore
     def validate_hour(self, key: str, value: Optional[str]) -> Optional[int]:
@@ -126,14 +126,6 @@ def latest_streams(name: Optional[str] = None, limit: Optional[int] = None) -> S
     if name:
         streams = streams.join(Streamer).where(Streamer.name.contains(name))
     return streams
-
-
-def streamers() -> Select:
-    return select(Streamer)
-
-
-def streamer(name: str) -> Select:
-    return select(Streamer).where(Streamer.name == name)
 
 
 def settings(

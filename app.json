@@ -5,8 +5,8 @@
   "website": "https://github.com/soylent/offstream",
   "repository": "https://github.com/soylent/offstream",
   "success_url": "/welcome",
-  "scrips": {
-    "postdeploy": "flask offstream create"
+  "scripts": {
+    "postdeploy": "offstream db-init"
   },
   "addons": [
     "heroku-postgresql",

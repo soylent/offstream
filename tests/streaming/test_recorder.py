@@ -2,12 +2,13 @@ from concurrent.futures import Future
 from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
-from offstream import db
-from offstream.streaming import Recorder
 from requests.models import Response
 from sqlalchemy import select
 from streamlink.plugins.twitch import Twitch, TwitchHLSStream, TwitchHLSStreamReader
 from streamlink.stream.hls import Sequence
+
+from offstream import db
+from offstream.streaming import Recorder
 
 
 @pytest.fixture(autouse=True, scope="module")

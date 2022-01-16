@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 from wsgiref.simple_server import make_server
 
 import click
+from sqlalchemy import select
 
 from offstream import db
 from offstream.streaming import Recorder
@@ -48,7 +49,7 @@ def main(ctx: click.core.Context, host: str, port: int) -> None:
     except OSError as error:
         raise click.ClickException(f"Bind failed: {error}") from error
     bind_host, bind_port = httpd.server_address
-    click.echo(f"Listening on {bind_host}:{bind_port}")
+    click.echo(f"Running on http://{bind_host}:{bind_port}/")
     server = Thread(target=httpd.serve_forever)
     server.start()
     try:
@@ -71,10 +72,17 @@ def record() -> None:
     recorder.start()
 
 
-@main.command("setup")
-def setup() -> None:
-    """Setup offstream."""
+@main.command("db-init")
+def db_init() -> None:
+    """Create db tables."""
     db.Base.metadata.create_all(db.engine)
+
+
+@main.command("setup")
+@click.pass_context
+def setup(ctx: click.core.Context) -> None:
+    """Setup offstream."""
+    ctx.invoke(db_init)
     with db.Session() as session:
         if not session.query(db.Settings).scalar():
             settings, password = db.settings()
@@ -90,13 +98,13 @@ def ping() -> None:
     """Ping itself to prevent idling."""
     now = datetime.now()
     with db.Session() as session:
-        streamers_exist = session.scalars(db.streamers()).first() is not None
+        streamers_exist = session.scalars(select(db.Streamer)).first() is not None
         settings = session.query(db.Settings).scalar()
     if streamers_exist and settings and settings.ping_url:
-        start_hour = settings.ping_start_hour or 0
-        end_hour = settings.ping_end_hour or 24
+        start_hour = settings.ping_start_hour
+        end_hour = settings.ping_end_hour
         on = start_hour <= now.hour < end_hour
-        not_off = end_hour <= start_hour and not end_hour <= now.hour < start_hour
+        not_off = end_hour < start_hour and not end_hour <= now.hour < start_hour
         if on or not_off:
             request = Request(
                 settings.ping_url, headers={"user-agent": "offstream-ping"}

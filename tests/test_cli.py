@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
 import pytest
-from offstream import db
 from sqlalchemy import inspect
+
+from offstream import db
 
 
 @pytest.mark.parametrize("command", ["offstream", "offstream record"])
@@ -42,9 +43,7 @@ def set_time():
         yield _set_time
 
 
-@pytest.mark.parametrize(
-    "hours", [(None, 0, None), (0, 0, 24), (22, 22, 7), (22, 0, 7)]
-)
+@pytest.mark.parametrize("hours", [(0, 0, 24), (22, 22, 7), (22, 0, 7)])
 def test_ping_during_on_hours(runner, streamer, settings, set_time, session, hours):
     settings = settings[0]
     start, now, end = hours
@@ -61,7 +60,7 @@ def test_ping_during_on_hours(runner, streamer, settings, set_time, session, hou
     assert "OK" in result.stdout
 
 
-@pytest.mark.parametrize("hours", [(0, 22, 22), (22, 21, 7), (22, 7, 7)])
+@pytest.mark.parametrize("hours", [(0, 22, 22), (22, 21, 7), (22, 7, 7), (0, 0, 0)])
 def test_ping_during_off_hours(runner, streamer, settings, set_time, session, hours):
     start, now, end = hours
     settings = settings[0]
@@ -88,6 +87,14 @@ def test_ping_when_there_are_no_settings(runner, streamer):
 
     assert result.exit_code == 0
     assert "Skipped" in result.stdout
+
+
+def test_db_init(runner):
+    result = runner.invoke(args=["offstream", "db-init"])
+
+    assert inspect(db.engine).get_table_names()
+    assert result.exit_code == 0
+    assert not result.output
 
 
 def test_setup(runner):

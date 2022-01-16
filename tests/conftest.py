@@ -1,10 +1,12 @@
 import os
+
 import flask
 
 flask.cli.load_dotenv()
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 import pytest
+
 from offstream import db
 from offstream.app import app
 

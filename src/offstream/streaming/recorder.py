@@ -8,9 +8,11 @@ from types import TracebackType
 from typing import IO, Any, NamedTuple, Optional
 
 import ipfshttpclient  # type: ignore
-from offstream import db
 from requests.exceptions import ChunkedEncodingError, ConnectionError
+from sqlalchemy import select
 from streamlink import Streamlink  # type: ignore
+
+from offstream import db
 
 from .hls import Playlist
 
@@ -47,7 +49,7 @@ class Recorder:
                 )
 
         while not self._closed.is_set():
-            for streamer in self._session.scalars(db.streamers()):
+            for streamer in self._session.scalars(select(db.Streamer)):
                 with self._lock:
                     if streamer.id in self._recording:
                         continue
@@ -134,7 +136,7 @@ class _Worker:
         self._workdir_path = Path(self._workdir.name)
 
     def _calculate_flush_threshold(self) -> int:
-        dyno_ram_size = int(os.getenv("DYNO_RAM", "512")) * 2 ** 20
+        dyno_ram_size = int(os.getenv("DYNO_RAM", "512")) * 10 ** 6
         default_size = min(
             self.ipfs_request_size_limit, dyno_ram_size // MAX_CONCURRENT_RECORDERS
         )

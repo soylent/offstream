@@ -1,4 +1,5 @@
 .flaskenv
+CONTRIBUTING.md
 LICENSE
 README.md
 app.json
