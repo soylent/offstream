@@ -5,6 +5,16 @@
   "website": "https://github.com/soylent/offstream",
   "repository": "https://github.com/soylent/offstream",
   "success_url": "/welcome",
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    },
+    "clock": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
   "scripts": {
     "postdeploy": "offstream db-init"
   },
@@ -12,6 +22,12 @@
     "heroku-postgresql",
     "scheduler"
   ],
+  "env": {
+    "TZ": {
+      "description": "Preferred timezone",
+      "required": false
+    }
+  },
   "keywords": [
     "twitch",
     "streaming"

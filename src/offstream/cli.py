@@ -1,8 +1,9 @@
 import os
 import signal
+import time
 from datetime import datetime
 from threading import Thread
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from urllib.request import Request, urlopen
 from wsgiref.simple_server import make_server
 
@@ -94,8 +95,17 @@ def setup(ctx: click.core.Context) -> None:
 
 
 @main.command("ping")
-def ping() -> None:
+@click.option("-i", "--interval", help="Ping periodically", type=int)
+def ping(interval: Optional[int]) -> None:
     """Ping itself to prevent idling."""
+    while True:
+        _ping_once()
+        if interval is None:
+            break
+        time.sleep(interval)
+
+
+def _ping_once():
     now = datetime.now()
     with db.Session() as session:
         streamers_exist = session.scalars(select(db.Streamer)).first() is not None

@@ -105,7 +105,7 @@ The following environment variables are supported.
 
 - `OFFSTREAM_FLUSH_THRESHOLD`
 
-  Default: automatically calculated, normally `64000000` bytes (64M).
+  Default: automatically calculated, normally `100000000` bytes (100M).
 
 - `OFFSTREAM_CHECK_INTERVAL`
 
@@ -121,7 +121,7 @@ The following environment variables are supported.
 
 - `OFFSTREAM_MAX_CONCURRENT_RECORDERS`
 
-  Default: `8`
+  Default: `5`
 
 - `DATABASE_URL`
 
@@ -129,7 +129,7 @@ The following environment variables are supported.
 
 - `TZ`
 
-  Your preferred timezone, e.g. `America/New_York`. Please see
+  Preferred timezone, e.g. `America/New_York`. Please see
   https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
 
 ## FAQ

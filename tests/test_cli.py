@@ -14,7 +14,7 @@ def test_main(runner, command):
 
     assert result.exit_code == 0
     if command == "offstream":
-        assert "Listening on 127.0.0.1:8000" in result.stdout
+        assert "Running on http://127.0.0.1:8000/" in result.stdout
     elif command == "offstream record":
         assert not result.output
 

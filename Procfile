@@ -1,2 +1,2 @@
 web: offstream --host="" --port=$PORT
-clock: offstream ping
+clock: offstream ping --interval 800

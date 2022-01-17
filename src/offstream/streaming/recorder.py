@@ -8,11 +8,10 @@ from types import TracebackType
 from typing import IO, Any, NamedTuple, Optional
 
 import ipfshttpclient  # type: ignore
+from offstream import db
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 from sqlalchemy import select
 from streamlink import Streamlink  # type: ignore
-
-from offstream import db
 
 from .hls import Playlist
 
@@ -21,7 +20,7 @@ from .hls import Playlist
 # We can't use warnings.catch_warnings() because it is not thread-safe.
 ipfshttpclient.client.assert_version = lambda *args: True
 
-MAX_CONCURRENT_RECORDERS = int(os.getenv("OFFSTREAM_MAX_CONCURRENT_RECORDERS", "8"))
+MAX_CONCURRENT_RECORDERS = int(os.getenv("OFFSTREAM_MAX_CONCURRENT_RECORDERS", "5"))
 
 _logger = logging.getLogger("offstream")
 
@@ -42,11 +41,9 @@ class Recorder:
             try:
                 future.result()
             except CancelledError:  # Closing time
-                _logger.info("Canceled recording %s", streamer.name)
+                _logger.info("Canceled recording")
             except Exception:
-                _logger.warning(
-                    "Exception while recording %s", streamer.name, exc_info=True
-                )
+                _logger.warning("Exception while recording", exc_info=True)
 
         while not self._closed.is_set():
             for streamer in self._session.scalars(select(db.Streamer)):
@@ -157,7 +154,7 @@ class _Worker:
                         size += seg.write(chunk)
                 except (ConnectionError, ChunkedEncodingError) as error:
                     _logger.warning(
-                        "Closing %s because of %s", self._streamer.name, error
+                        "Failed to read %s because of %s", self._streamer.name, error
                     )
                     reader.close()
                     return
@@ -221,6 +218,7 @@ class _Worker:
             except CancelledError:  # Closing time
                 _logger.info("Canceled flushing %s", self._streamer.name)
             except Exception:
+                # The recording will be playable, but it will miss a chunk.
                 _logger.warning(
                     "Exception while flushing %s", self._streamer.name, exc_info=True
                 )
@@ -239,6 +237,8 @@ class _Worker:
 
     def _upload_segments(self, segments: list[_Segment]) -> str:
         files = [self._workdir_path / segment.file for segment in segments]
+        # TODO: This and the next add can raise ipfshttpclient.exceptions.ConnectionError: ConnectionError: [Errno 32] Broken pipe
+        # TODO: This and the next add can raise ipfshttpclient.exceptions.StatusError: HTTPError : 429 Client Error: Too Many Requests for url: https://ipfs.infura.io:5001/api/v0/add?stream- channels=true&trickle=False&only-hash=False&wrap-with-directory=False&pin=True&raw-leaves=False&nocopy=False&cid-version=1
         ipfs_files = self._ipfs.add(
             *files, trickle=True, wrap_with_directory=True, cid_version=1
         )
@@ -273,8 +273,9 @@ class _Worker:
     ) -> None:
         if not self._closed and self._dirty_size > 0:
             self._flush()
+        cancel_futures = self._closed
         self.close()
-        self._executor.shutdown(cancel_futures=True)
+        self._executor.shutdown(cancel_futures=cancel_futures)
         self._session.close()
         self._workdir.cleanup()
 
