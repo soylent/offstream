@@ -137,15 +137,16 @@ def test_update_ping_hours_with_invalid_values(client, auth, param, value):
         {"method": "POST", "path": "/settings"},
     ],
 )
-def test_auth(client, bad_auth, settings, endpoint):
+@pytest.mark.parametrize("fixture", [None, "settings"])
+def test_auth(client, bad_auth, endpoint, fixture, request):
+    if fixture:
+        request.getfixturevalue(fixture)
+
     response = client.open(**endpoint, auth=bad_auth)
 
     assert response.status_code == 401
     assert response.json["error"]["name"] == "unauthorized"
     assert response.json["error"]["description"] == "Authentication failed"
-
-
-# TODO: test_auth_when_no_settings(client, bad_auth):
 
 
 @pytest.mark.parametrize("fixture", [None, "stream"])
