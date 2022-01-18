@@ -1,38 +1,79 @@
 <html>
   <body>
     <h1>Success!</h1>
-    <p>Your app is ready. You will need to use the following credentials.</p>
-    <dl>
-      <dt>Username</dt>
-      <dd>{{ username }}</dd>
-      <dt>Password</dt>
-      <dd>{{ password }}</dd>
-    </dl>
-    <p>
-      I recommend adding the following entry to your <code>~/.netrc</code> file
-      (or <code>_netrc</code> on Windows).
-    </p>
-    <pre>
+    <ol>
+      <li>
+        <p>
+          Your app is almost ready. You will need to use the following
+          credentials.
+        </p>
+        <dl>
+          <dt>Username</dt>
+          <dd>{{ username }}</dd>
+          <dt>Password</dt>
+          <dd>{{ password }}</dd>
+        </dl>
+        <p>
+          I recommend adding them to your <code>~/.netrc</code> file (or
+          <code>_netrc</code> on Windows).
+        </p>
+        <pre>
 machine {{ request.host }}
   login {{ username }}
   password {{ password }}
 </pre
-    >
-    <p>Next, add your favorite streamers.</p>
-    <pre>
-$ curl {{ request.host_url }}streamers --netrc -d name=garybernhardt
-$ curl {{ request.host_url }}streamers --netrc -d name=esl_sc2 -d max_quality=720p60
+        >
+      </li>
+      {%- if app_name %}
+      <li>
+        <p>
+          In order to prevent your app from sleeping, please go to the
+          <a href="https://dashboard.heroku.com/apps/{{ app_name }}/scheduler"
+            >scheduler add-on settings</a
+          >
+          and create a job with the following options:
+        </p>
+        <dl>
+          <dt>Schedule</dt>
+          <dd>Every 10 minutes</dd>
+          <dt>Run Command</dt>
+          <dd>offstream ping</dd>
+        </dl>
+        <p>
+          Now your app will be up 24/7. You can save some dyno hours by changing
+          the
+          <code>ping_start_hour</code> and <code>ping_end_hour</code> settings
+          to let the app sleep when no one is streaming.
+        </p>
+        <pre>
+$ curl {{ url_for("update_settings", _external=True) }} -d ping_start_hour=12 -d ping_end_hour=19
+          </pre
+        >
+      </li>
+
+      {%- endif %}
+      <li>
+        <p>Next, add your favorite streamers.</p>
+        <pre>
+$ curl {{ url_for("create_streamer", _external=True) }} --netrc -d name=garybernhardt
+$ curl {{ url_for("create_streamer", _external=True) }} --netrc -d name=esl_sc2 -d max_quality=720p60
 </pre
-    >
-    <p>When any of the streamers goes live, the app will record the stream.</p>
-    <p>
-      Finally, to watch the latest recording, open the following URL in mpv,
-      VLC, QuickTime, or any other video player.
-    </p>
-    <pre>
-$ mpv {{ request.host_url }}latest/esl_sc2
+        >
+        <p>
+          When any of the streamers goes live, the app will record the stream.
+        </p>
+      </li>
+      <li>
+        <p>
+          Finally, to watch the latest recording, open the following URL in mpv,
+          VLC, QuickTime, or any other video player.
+        </p>
+        <pre>
+$ mpv {{ url_for("latest_stream", name="esl_sc2", _external=True) }}
 </pre
-    >
+        >
+      </li>
+    </ol>
     <p>
       If you have a question or run into a problem, please create an issue on
       <a href="https://github.com/soylent/offstream/issues">GitHub</a>.

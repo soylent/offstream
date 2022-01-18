@@ -8,10 +8,11 @@ from types import TracebackType
 from typing import IO, Any, NamedTuple, Optional
 
 import ipfshttpclient  # type: ignore
-from offstream import db
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 from sqlalchemy import select
 from streamlink import Streamlink  # type: ignore
+
+from offstream import db
 
 from .hls import Playlist
 

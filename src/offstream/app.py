@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Any
+from typing import Any, Optional
 
 from flask import Flask, abort, make_response, render_template, request
 from flask.typing import ResponseReturnValue
@@ -15,7 +15,6 @@ app = Flask("offstream", static_url_path="/")
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
 app.cli.add_command(main)
 
-# TODO: GET /settings
 # TODO: Tests - test the recorder package
 # - no internet connection before
 # - no internet connection while recording
@@ -110,8 +109,16 @@ def welcome() -> ResponseReturnValue:
         username = settings.username
         session.add(settings)
         session.commit()
-    html = render_template("welcome.html", username=username, password=password)
+    app_name = _heroku_app_name(request.host)
+    html = render_template(
+        "welcome.html", username=username, password=password, app_name=app_name
+    )
     return make_response(html)
+
+
+def _heroku_app_name(host: str, heroku: str = "herokuapp.com") -> Optional[str]:
+    labels = host.split(".", 1)
+    return labels[0] if len(labels) == 2 and labels[1] == heroku else None
 
 
 @app.errorhandler(HTTPException)

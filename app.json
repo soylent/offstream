@@ -10,18 +10,12 @@
   },
   "addons": [
     "heroku-postgresql",
-    {
-      "plan": "scheduler",
-      "options": {
-        "command": "offstream ping",
-        "every": 10,
-        "at": 0
-      }
-    }
+    "scheduler"
   ],
   "env": {
     "TZ": {
       "description": "Preferred timezone",
+      "value": "America/New_York",
       "required": false
     }
   },

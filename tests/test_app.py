@@ -173,6 +173,21 @@ def test_welcome(client):
     assert b"This app has already been claimed." in response.data
 
 
+def test_welcome_on_heroku(client):
+    response = client.get("/welcome", headers={"host": "abc.herokuapp.com"})
+
+    assert response.status_code == 200
+    assert b"abc" in response.data
+    assert b"offstream ping" in response.data
+
+
+def test_welcome_on_non_heroku(client):
+    response = client.get("/welcome", headers={"host": "example.org"})
+
+    assert response.status_code == 200
+    assert b"offstream ping" not in response.data
+
+
 def test_robots(client):
     response = client.get("/robots.txt")
 
