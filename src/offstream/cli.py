@@ -1,8 +1,7 @@
 import signal
-import time
 from datetime import datetime
 from threading import Thread
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 from urllib.request import Request, urlopen
 from wsgiref.simple_server import make_server
 

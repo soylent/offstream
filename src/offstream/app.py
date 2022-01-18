@@ -15,11 +15,6 @@ app = Flask("offstream", static_url_path="/")
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
 app.cli.add_command(main)
 
-# TODO: Tests - test the recorder package
-# - no internet connection before
-# - no internet connection while recording
-# TODO: Streams don't open on iOS
-
 
 @app.get("/")
 def root() -> ResponseReturnValue:
@@ -89,7 +84,6 @@ def update_settings() -> ResponseReturnValue:
         }
 
 
-# TODO: Make limit a query param
 @app.get("/rss")
 def rss(limit: int = 20) -> ResponseReturnValue:
     with db.Session() as session:

@@ -6,7 +6,7 @@ Record your favorite twitch streams automatically and watch them later.
 - Streams are recorded as is, without re-transcoding.
 - Recordings are never muted.
 - Ads are optional.
-- You can run it on Heroku (completely free) or on your own server.
+- You can run it on Heroku (completely free) or your own server.
 - Recordings are stored on IPFS.
 - RSS feed of all recordings is available. It can be consumed by youtube-dl,
   VLC, and other feed readers.
@@ -18,7 +18,7 @@ Record your favorite twitch streams automatically and watch them later.
 
 You can deploy the app to Heroku by clicking the button below and following the
 instructions. IMPORTANT: When the app is deployed, click on the "View" button at
-the bottom to get your credentials.
+the bottom to complete the setup.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 

@@ -41,16 +41,18 @@ machine {{ request.host }}
         </dl>
         <p>
           Now your app will be up 24/7. You can save some dyno hours by changing
-          the
-          <code>ping_start_hour</code> and <code>ping_end_hour</code> settings
-          to let the app sleep when no one is streaming.
+          the <code>ping_start_hour</code> and
+          <code>ping_end_hour</code> settings to let the app sleep when no one
+          is streaming. For example, to keep your app awake only between 12pm
+          and 7pm, run the following command. Note that the timezone is
+          specified by the <code>TZ</code>
+          environment variable.
         </p>
         <pre>
 $ curl {{ url_for("update_settings", _external=True) }} -d ping_start_hour=12 -d ping_end_hour=19
           </pre
         >
       </li>
-
       {%- endif %}
       <li>
         <p>Next, add your favorite streamers.</p>

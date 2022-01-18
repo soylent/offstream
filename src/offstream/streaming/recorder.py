@@ -237,8 +237,6 @@ class _Worker:
 
     def _upload_segments(self, segments: list[_Segment]) -> str:
         files = [self._workdir_path / segment.file for segment in segments]
-        # TODO: This and the next add can raise ipfshttpclient.exceptions.ConnectionError: ConnectionError: [Errno 32] Broken pipe
-        # TODO: This and the next add can raise ipfshttpclient.exceptions.StatusError: HTTPError : 429 Client Error: Too Many Requests for url: https://ipfs.infura.io:5001/api/v0/add?stream- channels=true&trickle=False&only-hash=False&wrap-with-directory=False&pin=True&raw-leaves=False&nocopy=False&cid-version=1
         ipfs_files = self._ipfs.add(
             *files, trickle=True, wrap_with_directory=True, cid_version=1
         )
