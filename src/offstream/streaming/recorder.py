@@ -237,11 +237,13 @@ class _Worker:
 
     def _upload_segments(self, segments: list[_Segment]) -> str:
         files = [self._workdir_path / segment.file for segment in segments]
-        ipfs_files = self._ipfs.add(
-            *files, trickle=True, wrap_with_directory=True, cid_version=1
-        )
-        for file in files:
-            os.remove(file)
+        try:
+            ipfs_files = self._ipfs.add(
+                *files, trickle=True, wrap_with_directory=True, cid_version=1
+            )
+        finally:
+            for file in files:
+                os.remove(file)
         dir_ipfs = next(file for file in ipfs_files if not file["Name"])
         for segment in segments:
             url = self._ipfs_url(dir_ipfs["Hash"], path=segment.file)
