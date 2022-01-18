@@ -32,6 +32,7 @@ def test_latest_stream(client, stream):
 
     assert response.status_code == 302
     assert response.location.startswith("https://")
+    assert response.access_control_allow_origin == "*"
     assert response.json["url"] == response.location
 
 

@@ -30,7 +30,8 @@ def root() -> ResponseReturnValue:
 def latest_stream(name: str) -> ResponseReturnValue:
     with db.Session() as session:
         if stream := session.scalars(db.latest_streams(name)).first():
-            return {"url": stream.url}, 302, {"location": stream.url}
+            headers = {"location": stream.url, "access-control-allow-origin": "*"}
+            return {"url": stream.url}, 302, headers
     abort(404, "No streams found")
 
 
