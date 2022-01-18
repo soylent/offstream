@@ -2,6 +2,7 @@
 
 offstream is a single-process multi-threaded app that consists of two
 independent parts:
+
 1. Flask **API** that is served by a simple HTTP server running in a dedicated
    thread.
 1. Stream **recorder** that has a main thread which submits recording jobs to a
@@ -47,6 +48,6 @@ $ flask offstream --help
 | `flask run`               | Start only API.                |
 | `flask offstream`         | Start API and stream recorder. |
 | `flask offstream record`  | Start only stream recorder.    |
-| `flask offstream db-init` | Create db tables               |
+| `flask offstream db-init` | Create db tables.              |
 | `flask offstream setup`   | Setup the database.            |
 | `flask offstream ping`    | Ping itself to prevent idling. |
