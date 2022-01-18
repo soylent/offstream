@@ -6,6 +6,7 @@ from flask.typing import ResponseReturnValue
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash
 
 from offstream import db
@@ -14,6 +15,7 @@ from offstream.cli import main
 app = Flask("offstream", static_url_path="/")
 app.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
 app.cli.add_command(main)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)  # type: ignore
 
 
 @app.get("/")
