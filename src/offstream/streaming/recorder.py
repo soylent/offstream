@@ -154,7 +154,7 @@ class _Worker:
                         size += seg.write(chunk)
                 except (ConnectionError, ChunkedEncodingError) as error:
                     _logger.warning(
-                        "Failed to read %s because of %s", self._streamer.name, error
+                        "Exception while reading %s: %s", self._streamer.name, error
                     )
                     reader.close()
                     return
@@ -189,13 +189,12 @@ class _Worker:
                 )
                 self._session.add(self._stream)
                 reader.writer._write = _process_sequence  # HACK
-                # TODO: Add a test: Handle OSError (read timeout)
                 try:
                     while reader.read(-1):
                         pass
                 except OSError as error:
                     _logger.warning(
-                        "Closing %s because of %s", self._streamer.name, error
+                        "Exception while recording %s: %s", self._streamer.name, error
                     )
 
     def _append_segment(self, file: str, size: int, duration: float) -> None:

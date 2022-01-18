@@ -68,6 +68,16 @@ def test_start_with_one_streamer(streamer, twitch, ipfs_add):
     assert stream.category == twitch.get_category()
 
 
+def test_start_with_abrupt_end(streamer, twitch, session):
+    reader = twitch.streams()["best"].open().__enter__()
+    reader.read.side_effect = OSError("testing")
+
+    recorder = Recorder()
+    recorder.start(_loop=False)
+
+    assert not session.scalars(select(db.Stream)).all()
+
+
 def test_start_with_non_existent_streamer(streamer, twitch, session):
     twitch.streams.return_value = {}
 
