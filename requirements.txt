@@ -1,2 +1,2 @@
-offstream==1.0.0
+offstream==1.0.1
 psycopg2~=2.9
