@@ -28,7 +28,9 @@ machine {{ request.host }}
       <li>
         <p>
           In order to prevent your app from sleeping, please go to the
-          <a href="https://dashboard.heroku.com/apps/{{ app_name }}/scheduler"
+          <a
+            target="_blank"
+            href="https://dashboard.heroku.com/apps/{{ app_name }}/scheduler"
             >scheduler add-on settings</a
           >
           and create a job with the following options:
@@ -37,19 +39,19 @@ machine {{ request.host }}
           <dt>Schedule</dt>
           <dd>Every 10 minutes</dd>
           <dt>Run Command</dt>
-          <dd>offstream ping</dd>
+          <dd><code>offstream ping<code></dd>
         </dl>
         <p>
           Now your app will be up 24/7. You can save some dyno hours by changing
           the <code>ping_start_hour</code> and
-          <code>ping_end_hour</code> settings to let the app sleep when no one
-          is streaming. For example, to keep your app awake only between 12pm
-          and 7pm, run the following command. Note that the timezone is
-          specified by the <code>TZ</code>
+          <code>ping_end_hour</code> settings to let it sleep when no one is
+          streaming. For example, to keep your app awake only between 12pm and
+          7pm, run the following command. Note that the timezone is specified by
+          the <code>TZ</code>
           environment variable.
         </p>
         <pre>
-$ curl {{ url_for("update_settings", _external=True) }} -d ping_start_hour=12 -d ping_end_hour=19
+$ curl {{ url_for("update_settings", _external=True) }} --netrc -d ping_start_hour=12 -d ping_end_hour=19
           </pre
         >
       </li>
@@ -67,8 +69,15 @@ $ curl {{ url_for("create_streamer", _external=True) }} --netrc -d name=esl_sc2 
       </li>
       <li>
         <p>
-          Finally, to watch the latest recording, open the following URL in mpv,
-          VLC, QuickTime, or any other video player.
+          To see what's available, check your RSS feed.
+        </p>
+        <pre>
+$ curl {{ url_for("rss", _external=True) }}
+          </pre
+        >
+        <p>
+          To watch the latest recording, open the following URL in mpv, VLC,
+          QuickTime, or any other video player.
         </p>
         <pre>
 $ mpv {{ url_for("latest_stream", name="esl_sc2", _external=True) }}
@@ -77,8 +86,10 @@ $ mpv {{ url_for("latest_stream", name="esl_sc2", _external=True) }}
       </li>
     </ol>
     <p>
-      If you have a question or run into a problem, please create an issue on
-      <a href="https://github.com/soylent/offstream/issues">GitHub</a>.
+      If you have a question or ran into a problem, please create an issue on
+      <a target="_blank" href="https://github.com/soylent/offstream/issues"
+        >GitHub</a
+      >.
     </p>
   </body>
 </html>
