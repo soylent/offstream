@@ -5,22 +5,19 @@
   "website": "https://github.com/soylent/offstream",
   "repository": "https://github.com/soylent/offstream",
   "success_url": "/welcome",
-  "formation": {
-    "web": {
-      "quantity": 1,
-      "size": "free"
-    },
-    "clock": {
-      "quantity": 1,
-      "size": "free"
-    }
-  },
   "scripts": {
     "postdeploy": "offstream db-init"
   },
   "addons": [
     "heroku-postgresql",
-    "scheduler"
+    {
+      "plan": "scheduler",
+      "options": {
+        "command": "offstream ping",
+        "every": 10,
+        "at": 0
+      }
+    }
   ],
   "env": {
     "TZ": {
@@ -28,8 +25,5 @@
       "required": false
     }
   },
-  "keywords": [
-    "twitch",
-    "streaming"
-  ]
+  "keywords": ["twitch", "streaming"]
 }

@@ -1,4 +1,3 @@
-import os
 import signal
 import time
 from datetime import datetime
@@ -20,8 +19,7 @@ def validate_within(
     def _validator(ctx: click.core.Context, param: str, value: int) -> int:
         if minval <= value <= maxval:
             return value
-        else:
-            raise click.BadParameter(f"must be within {minval}-{maxval}")
+        raise click.BadParameter(f"must be within {minval}-{maxval}")
 
     return _validator
 
@@ -95,17 +93,7 @@ def setup(ctx: click.core.Context) -> None:
 
 
 @main.command("ping")
-@click.option("-i", "--interval", help="Ping periodically", type=int)
-def ping(interval: Optional[int]) -> None:
-    """Ping itself to prevent idling."""
-    while True:
-        _ping_once()
-        if interval is None:
-            break
-        time.sleep(interval)
-
-
-def _ping_once():
+def ping() -> None:
     now = datetime.now()
     with db.Session() as session:
         streamers_exist = session.scalars(select(db.Streamer)).first() is not None
