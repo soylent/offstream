@@ -1,4 +1,16 @@
-# Development
+# Contributing
+
+offstream is a single-process multi-threaded app that consists of two
+independent parts:
+1. Flask **API** that is served by a simple HTTP server running in a dedicated
+   thread.
+1. Stream **recorder** that has a main thread which submits recording jobs to a
+   thread pool executor. Each worker thread accumulates stream segments until
+   the total size reaches the flush threshold. Then it generates an HLS playlist
+   and uploads the segments and the playlist to IPFS. When the upload is
+   complete, the URL of the playlist is added to the database.
+
+## Development
 
 1. Create a virtual environment and activate it.
    ```sh

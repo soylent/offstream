@@ -76,13 +76,13 @@ An RSS feed of all recordings is available at `https://your-app-name.herokuapp.c
 
   Requires auth.
 
-- `DELETE /streamers/<name>`
+- `DELETE /streamers/{name}`
 
   Delete a streamer. WARNING: Deletes all associated recordings too.
 
   Requires auth.
 
-- `GET /latest/<name>`
+- `GET /latest/{name}`
 
   Get the latest recorded stream.
 
@@ -136,8 +136,9 @@ The following environment variables are supported.
 
 - Q: My video player reports the following error: `keepalive request failed for 'https://bafybeie3v6lomkfti2b4zsa4yj35nypojllvjrzpbzyxhn5tkfoqaswmbm.ipfs.infura-ipfs.io/18846.ts'`
 
-  A: This warning can be safely ignored. It's because Infura keeps the root content
-  identifier (CID) in a subdomain, rather than in the path portion of the URL.
+  A: This warning can be safely ignored. It's because Infura keeps the root
+  content identifier (CID) in a subdomain, rather than in the path portion of
+  the URL.
 
 ## See Also
 
