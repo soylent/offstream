@@ -8,7 +8,7 @@ from types import TracebackType
 from typing import IO, Any, NamedTuple, Optional
 
 import ipfshttpclient  # type: ignore
-from requests.exceptions import ChunkedEncodingError, ConnectionError
+from requests.exceptions import RequestException
 from sqlalchemy import select
 from streamlink import Streamlink  # type: ignore
 
@@ -153,7 +153,7 @@ class _Worker:
                     for chunk in response.iter_content(8192):
                         reader.buffer.write(chunk)
                         size += seg.write(chunk)
-                except (ConnectionError, ChunkedEncodingError) as error:
+                except RequestException as error:
                     _logger.warning(
                         "Exception while reading %s: %s", self._streamer.name, error
                     )
