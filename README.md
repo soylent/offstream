@@ -10,7 +10,7 @@ Record your favorite twitch streams automatically and watch them later.
 - Recordings are stored on IPFS.
 - RSS feed of all recordings is available. It can be consumed by youtube-dl,
   VLC, and other feed readers.
-- Streams are available while the recording is in progress.
+- Streams are available while recording is in progress.
 
 ## Installing
 
