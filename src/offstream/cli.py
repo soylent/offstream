@@ -70,8 +70,8 @@ def record() -> None:
     recorder.start()
 
 
-@main.command("db-init")
-def db_init() -> None:
+@main.command("init-db")
+def init_db() -> None:
     """Create db tables."""
     db.Base.metadata.create_all(db.engine)
 
@@ -80,7 +80,7 @@ def db_init() -> None:
 @click.pass_context
 def setup(ctx: click.core.Context) -> None:
     """Setup offstream."""
-    ctx.invoke(db_init)
+    ctx.invoke(init_db)
     with db.Session() as session:
         if not session.query(db.Settings).scalar():
             settings, password = db.settings()

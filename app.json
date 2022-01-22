@@ -6,7 +6,7 @@
   "repository": "https://github.com/soylent/offstream",
   "success_url": "/welcome",
   "scripts": {
-    "postdeploy": "offstream db-init"
+    "postdeploy": "offstream init-db"
   },
   "addons": [
     "heroku-postgresql",

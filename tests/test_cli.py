@@ -89,8 +89,8 @@ def test_ping_when_there_are_no_settings(runner, streamer):
     assert "Skipped" in result.stdout
 
 
-def test_db_init(runner):
-    result = runner.invoke(args=["offstream", "db-init"])
+def test_init_db(runner):
+    result = runner.invoke(args=["offstream", "init-db"])
 
     assert inspect(db.engine).get_table_names()
     assert result.exit_code == 0

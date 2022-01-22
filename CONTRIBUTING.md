@@ -48,6 +48,6 @@ $ flask offstream --help
 | `flask run`               | Start only API.                |
 | `flask offstream`         | Start API and stream recorder. |
 | `flask offstream record`  | Start only stream recorder.    |
-| `flask offstream db-init` | Create db tables.              |
+| `flask offstream init-db` | Create db tables.              |
 | `flask offstream setup`   | Setup the database.            |
 | `flask offstream ping`    | Ping itself to prevent idling. |
