@@ -33,7 +33,7 @@ the bottom to complete the setup.
    $ offstream setup
    ```
    You will get credentials to control the app. I recommend adding them to your
-   `~/.netrc` file (or `_netrc` on Windows).
+   `~/.netrc` file (or `_netrc` on Windows):
    ```
    machine <your-app-hostname>
        login offstream
@@ -49,8 +49,8 @@ the bottom to complete the setup.
 Next, add your favorite streamers.
 
 ```sh
-$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=garybernhardt
-$ curl https://your-app-name.herokuapp.com/streamers --netrc -d name=esl_sc2 -d max_quality=720p60
+$ curl -n https://your-app-name.herokuapp.com/streamers -d name=garybernhardt
+$ curl -n https://your-app-name.herokuapp.com/streamers -d name=esl_sc2 -d max_quality=720p60
 ```
 
 The `max_quality` parameter is optional and defaults to `best`. Typical stream
@@ -129,12 +129,13 @@ The following environment variables are supported.
 
 - `TZ`
 
-  Preferred timezone, e.g. `America/New_York`. Please see
+  Preferred timezone, e.g. `America/New_York`. Please see<br>
   https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
 
 ## FAQ
 
-- Q: My video player reports the following error: `keepalive request failed for 'https://bafybeie3v6lomkfti2b4zsa4yj35nypojllvjrzpbzyxhn5tkfoqaswmbm.ipfs.infura-ipfs.io/18846.ts'`
+- Q: My video player reports the following error:<br>
+  `keepalive request failed for 'https://bafybeie3v6lomkfti2b4zsa4yj35nypojllvjrzpbzyxhn5tkfoqaswmbm.ipfs.infura-ipfs.io/18846.ts'`
 
   A: This warning can be safely ignored. It's because Infura keeps the root
   content identifier (CID) in a subdomain, rather than in the path portion of

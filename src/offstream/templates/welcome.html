@@ -15,7 +15,7 @@
         </dl>
         <p>
           I recommend adding them to your <code>~/.netrc</code> file (or
-          <code>_netrc</code> on Windows).
+          <code>_netrc</code> on Windows):
         </p>
         <pre>
 machine {{ request.host }}
@@ -51,7 +51,7 @@ machine {{ request.host }}
           environment variable.
         </p>
         <pre>
-$ curl {{ url_for("update_settings", _external=True) }} --netrc -d ping_start_hour=12 -d ping_end_hour=19
+$ curl -n {{ url_for("update_settings", _external=True) }} -d ping_start_hour=12 -d ping_end_hour=19
           </pre
         >
       </li>
@@ -59,8 +59,8 @@ $ curl {{ url_for("update_settings", _external=True) }} --netrc -d ping_start_ho
       <li>
         <p>Next, add your favorite streamers.</p>
         <pre>
-$ curl {{ url_for("create_streamer", _external=True) }} --netrc -d name=garybernhardt
-$ curl {{ url_for("create_streamer", _external=True) }} --netrc -d name=esl_sc2 -d max_quality=720p60
+$ curl -n {{ url_for("create_streamer", _external=True) }} -d name=garybernhardt
+$ curl -n {{ url_for("create_streamer", _external=True) }} -d name=esl_sc2 -d max_quality=720p60
 </pre
         >
         <p>
