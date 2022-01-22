@@ -25,7 +25,7 @@ def _validate_within(
 
 @click.group("offstream", invoke_without_command=True)
 @click.pass_context
-@click.option("--host", help="Bind host", default="127.0.0.1", show_default=True)
+@click.option("-h", "--host", help="Bind host", default="127.0.0.1", show_default=True)
 @click.option(
     "-p",
     "--port",
