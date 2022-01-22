@@ -94,6 +94,7 @@ def setup(ctx: click.core.Context) -> None:
 
 @main.command("ping")
 def ping() -> None:
+    """Ping itself."""
     now = datetime.now()
     with db.Session() as session:
         streamers_exist = session.scalars(select(db.Streamer)).first() is not None
