@@ -6,7 +6,7 @@ Record your favorite twitch streams automatically and watch them later.
 - Streams are recorded as is, without re-transcoding.
 - Recordings are never muted.
 - Ads are optional.
-- You can run it on Heroku (completely free) or your own server.
+- You can run it on Heroku (completely free) or locally.
 - Recordings are stored on IPFS.
 - RSS feed of all recordings is available. It can be consumed by youtube-dl,
   VLC, and other feed readers.
@@ -46,7 +46,7 @@ the bottom to complete the setup.
 
 ## Usage
 
-Next, add your favorite streamers.
+Once your app is ready, you can add your favorite streamers.
 
 ```sh
 $ curl -n https://your-app-name.herokuapp.com/streamers -d name=garybernhardt
@@ -59,14 +59,15 @@ quality options are <br>
 
 When any of the streamers goes live, the app will record the stream.
 
+An RSS feed of all recordings is available at<br>
+`https://your-app-name.herokuapp.com/rss`.
+
 Finally, to watch the latest recording, open the following URL in mpv, VLC,
 QuickTime, or any other video player.
 
 ```sh
 $ mpv https://your-app-name.herokuapp.com/latest/esl_sc2
 ```
-
-An RSS feed of all recordings is available at `https://your-app-name.herokuapp.com/rss`.
 
 ## API
 
