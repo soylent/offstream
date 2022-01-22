@@ -1,2 +1,2 @@
-offstream==1.0.1
+-e git+https://github.com/soylent/offstream.git@main#egg=offstream
 psycopg2~=2.9
