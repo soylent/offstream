@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import inspect
 
+import offstream
 from offstream import db
 
 
@@ -32,6 +33,13 @@ def test_main_when_host_is_invalid(runner):
 
     assert result.exit_code == 1
     assert "Bind failed" in result.output
+
+
+def test_version(runner):
+    result = runner.invoke(args=["offstream", "--version"])
+
+    assert result.exit_code == 0
+    assert str(offstream.__version__) in result.output
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@ from offstream import db
 from offstream.streaming import Recorder
 
 
-def validate_within(
+def _validate_within(
     minval: int, maxval: int
 ) -> Callable[[click.core.Context, str, int], int]:
     def _validator(ctx: click.core.Context, param: str, value: int) -> int:
@@ -32,8 +32,9 @@ def validate_within(
     help="Bind port",
     default=8000,
     show_default=True,
-    callback=validate_within(0, 63535),
+    callback=_validate_within(0, 63535),
 )
+@click.version_option(package_name="offstream")
 def main(ctx: click.core.Context, host: str, port: int) -> None:
     """Start offstream."""
 
