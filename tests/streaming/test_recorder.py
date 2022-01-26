@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, create_autospec, patch
 import pytest
 from requests.models import Response
 from sqlalchemy import select
+from streamlink.exceptions import PluginError
 from streamlink.plugins.twitch import Twitch, TwitchHLSStream, TwitchHLSStreamReader
 from streamlink.stream.hls import Sequence
 
@@ -71,6 +72,15 @@ def test_start_with_one_streamer(streamer, twitch, ipfs_add):
 def test_start_with_abrupt_end(streamer, twitch, session):
     reader = twitch.streams()["best"].open().__enter__()
     reader.read.side_effect = OSError("testing")
+
+    recorder = Recorder()
+    recorder.start(_loop=False)
+
+    assert not session.scalars(select(db.Stream)).all()
+
+
+def test_start_with_plugin_error(streamer, twitch, session):
+    twitch.streams.side_effect = PluginError("testing")
 
     recorder = Recorder()
     recorder.start(_loop=False)

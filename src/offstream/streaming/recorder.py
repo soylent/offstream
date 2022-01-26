@@ -11,6 +11,7 @@ import ipfshttpclient  # type: ignore
 from requests.exceptions import RequestException
 from sqlalchemy import select
 from streamlink import Streamlink  # type: ignore
+from streamlink.exceptions import PluginError  # type: ignore
 
 from offstream import db
 
@@ -163,10 +164,16 @@ class _Worker:
 
         plugin_class, url = self._streamlink.resolve_url(self._streamer.url)
         plugin = plugin_class(url)
-        # TODO: Handle PluginError?
-        if streams := plugin.streams(
-            sorting_excludes=[f">{self._streamer.max_quality}"]
-        ):
+        try:
+            streams = plugin.streams(
+                sorting_excludes=[f">{self._streamer.max_quality}"]
+            )
+        except PluginError as error:
+            _logger.warning(
+                "Exception while getting streams of %s: %s", self._streamer.name, error
+            )
+            return
+        if streams:
             try:
                 stream = streams["best"]
             except KeyError:
