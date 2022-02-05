@@ -66,24 +66,24 @@ Finally, to watch the latest recording, open the following URL in mpv, VLC,
 QuickTime, or any other video player.
 
 ```sh
-$ mpv https://your-app-name.herokuapp.com/latest/esl_sc2
+$ mpv https://your-app-name.herokuapp.com/latest/{streamer_name}
 ```
 
 ## API
 
-- `POST /streamers -d name=<name> -d max_quality=<quality>`
+- `POST /streamers -d name=<streamer_name> -d max_quality=<quality>`
 
   Track a new streamer.
 
   Requires auth.
 
-- `DELETE /streamers/{name}`
+- `DELETE /streamers/{streamer_name}`
 
   Delete a streamer. WARNING: Deletes all associated recordings too.
 
   Requires auth.
 
-- `GET /latest/{name}`
+- `GET /latest/{streamer_name}`
 
   Get the latest recorded stream.
 
