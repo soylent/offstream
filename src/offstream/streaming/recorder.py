@@ -149,9 +149,7 @@ class _Worker:
             segfile = self._workdir_path / f"{sequence.num}.ts"
             with segfile.open(mode="wb") as seg:
                 try:
-                    # TODO: Change to reader.writer.WRITE_CHUNK_SIZE
-                    # when a new version of streamlink is released.
-                    for chunk in response.iter_content(8192):
+                    for chunk in response.iter_content(reader.writer.WRITE_CHUNK_SIZE):
                         reader.buffer.write(chunk)
                         size += seg.write(chunk)
                 except RequestException as error:
