@@ -150,15 +150,24 @@ def test_auth(client, bad_auth, endpoint, fixture, request):
 
 
 @pytest.mark.parametrize("fixture", [None, "stream"])
-def test_rss(client, fixture, request):
+@pytest.mark.parametrize("limit", ["1", None])
+def test_rss(client, fixture, limit, request):
     if fixture:
         request.getfixturevalue(fixture)
 
-    response = client.get("/rss")
+    response = client.get("/rss", query_string={"limit": limit})
 
     assert response.status_code == 200
     assert response.content_type == "application/rss+xml"
     assert response.data
+
+
+@pytest.mark.parametrize("limit", ["", "x"])
+def test_invalid_rss_limit(client, limit):
+    response = client.get("/rss", query_string={"limit": limit})
+
+    assert response.status_code == 400
+    assert b"Invalid limit" in response.data
 
 
 def test_welcome(client):

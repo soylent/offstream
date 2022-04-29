@@ -96,9 +96,9 @@ $ mpv https://your-app-name.herokuapp.com/latest/{streamer_name}
 
   Requires auth.
 
-- `GET /rss`
+- `GET /rss` or `GET /rss?limit=100`
 
-  RSS feed of all recordings.
+  RSS feed of recent recordings.
 
 ## Configuration
 

@@ -87,7 +87,11 @@ def update_settings() -> ResponseReturnValue:
 
 
 @app.get("/rss")
-def rss(limit: int = 20) -> ResponseReturnValue:
+def rss() -> ResponseReturnValue:
+    try:
+        limit = int(request.args.get("limit", default=20))
+    except ValueError:
+        abort(400, "Invalid limit")
     with db.Session() as session:
         streams = session.scalars(db.latest_streams(limit=limit)).all()
     xml = render_template("rss.xml", streams=streams)
