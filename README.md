@@ -14,7 +14,7 @@ Record your favorite twitch streams automatically and watch them later.
 
 ## Installing
 
-### Heroku
+### Option 1: Heroku
 
 You can deploy the app to Heroku by clicking the button below and following the
 instructions. IMPORTANT: When the app is deployed, click on the "View" button at
@@ -22,7 +22,7 @@ the bottom to complete the setup.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/soylent/offstream/tree/v1.0.2)
 
-### Local installation
+### Option 2: Local installation
 
 1. Install the package.
    ```sh
