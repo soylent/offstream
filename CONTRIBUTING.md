@@ -43,11 +43,11 @@ This app has a few custom flask commands.
 $ flask offstream --help
 ```
 
-| command                   | description                    |
-| ------------------------- | ------------------------------ |
-| `flask run`               | Start only API.                |
-| `flask offstream`         | Start API and stream recorder. |
-| `flask offstream record`  | Start only stream recorder.    |
-| `flask offstream init-db` | Create db tables.              |
-| `flask offstream setup`   | Setup the database.            |
-| `flask offstream ping`    | Ping itself to prevent idling. |
+| command                   | description                   |
+| ------------------------- | ----------------------------- |
+| `flask run`               | Start API                     |
+| `flask offstream`         | Start API and stream recorder |
+| `flask offstream record`  | Start stream recorder         |
+| `flask offstream init-db` | Create db tables              |
+| `flask offstream setup`   | Setup database                |
+| `flask offstream ping`    | Ping itself to prevent idling |

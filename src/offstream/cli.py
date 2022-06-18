@@ -37,8 +37,7 @@ def _validate_within(
 )
 @click.version_option(package_name="offstream")
 def main(ctx: click.core.Context, host: str, port: int) -> None:
-    """Start offstream."""
-
+    """Start offstream API and recorder"""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -61,8 +60,7 @@ def main(ctx: click.core.Context, host: str, port: int) -> None:
 
 @main.command("record")
 def record() -> None:
-    """Start stream recorder only."""
-
+    """Start offstream recorder"""
     def close_recorder(*_args: Any) -> None:
         recorder.close()
 
@@ -85,8 +83,8 @@ def init_db() -> None:
 @main.command("setup")
 @click.pass_context
 def setup(ctx: click.core.Context) -> None:
-    """Setup offstream."""
     ctx.invoke(init_db)
+    """Setup offstream"""
     with db.Session() as session:
         if not session.query(db.Settings).scalar():
             settings, password = db.settings()
@@ -99,7 +97,7 @@ def setup(ctx: click.core.Context) -> None:
 
 @main.command("ping")
 def ping() -> None:
-    """Ping itself."""
+    """Ping itself"""
     now = datetime.now()
     with db.Session() as session:
         streamers_exist = session.scalars(select(db.Streamer)).first() is not None
