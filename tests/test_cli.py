@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, inspect
 
 import offstream
 from offstream import db
@@ -97,12 +97,24 @@ def test_ping_when_there_are_no_settings(runner, streamer):
     assert "Skipped" in result.stdout
 
 
-def test_init_db(runner):
+def test_init_db_success(runner):
     result = runner.invoke(args=["offstream", "init-db"])
 
     assert inspect(db.engine).get_table_names()
     assert result.exit_code == 0
     assert not result.output
+
+
+def test_init_db_failure(runner, monkeypatch):
+    bad_engine = create_engine("sqlite:////")
+    try:
+        with patch.object(offstream.cli.db, "engine", new=bad_engine) as engine:
+            result = runner.invoke(args=["offstream", "init-db"])
+    finally:
+        bad_engine.dispose()
+
+    assert result.exit_code == 1
+    assert "unable to open database file" in result.output
 
 
 def test_setup(runner):

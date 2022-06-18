@@ -7,6 +7,7 @@ from wsgiref.simple_server import make_server
 
 import click
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from offstream import db
 from offstream.streaming import Recorder
@@ -73,8 +74,12 @@ def record() -> None:
 
 @main.command("init-db")
 def init_db() -> None:
-    """Create db tables."""
-    db.Base.metadata.create_all(db.engine)
+    """Create db tables"""
+    try:
+        db.Base.metadata.create_all(db.engine)
+    except SQLAlchemyError as error:
+        msg = str(error).splitlines()[0]
+        raise click.ClickException(msg) from error
 
 
 @main.command("setup")
