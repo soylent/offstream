@@ -38,6 +38,7 @@ def _validate_within(
 @click.version_option(package_name="offstream")
 def main(ctx: click.core.Context, host: str, port: int) -> None:
     """Start offstream API and recorder"""
+    ctx.invoke(init_db)
     if ctx.invoked_subcommand is not None:
         return
 
@@ -83,7 +84,6 @@ def init_db() -> None:
 @main.command("setup")
 @click.pass_context
 def setup(ctx: click.core.Context) -> None:
-    ctx.invoke(init_db)
     """Setup offstream"""
     with db.Session() as session:
         if not session.query(db.Settings).scalar():
