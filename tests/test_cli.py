@@ -18,6 +18,8 @@ def test_main(runner, command):
         assert "Running on http://127.0.0.1:8000/" in result.stdout
     elif command == "offstream record":
         assert not result.output
+    else:
+        assert False
 
 
 @pytest.mark.parametrize("port", [-1, 65536])
@@ -51,36 +53,47 @@ def set_time():
         yield _set_time
 
 
-@pytest.mark.parametrize("hours", [(0, 0, 24), (22, 22, 7), (22, 0, 7)])
-def test_ping_during_on_hours(runner, streamer, settings, set_time, session, hours):
+@pytest.fixture
+def set_ping_hours(settings, session):
+    def _set_ping_hours(*, start_hour, end_hour):
+        settings.ping_start_hour = start_hour
+        settings.ping_end_hour = end_hour
+        session.commit()
+
     settings = settings[0]
-    start, now, end = hours
-    settings.ping_start_hour = start
-    settings.ping_end_hour = end
-    session.commit()
-    set_time(hour=now)
+    yield _set_ping_hours
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"start_hour": 0, "current_hour": 0, "end_hour": 24, "ping": True},
+        {"start_hour": 22, "current_hour": 22, "end_hour": 7, "ping": True},
+        {"start_hour": 22, "current_hour": 0, "end_hour": 7, "ping": True},
+        {"start_hour": 0, "current_hour": 22, "end_hour": 22, "ping": False},
+        {"start_hour": 22, "current_hour": 21, "end_hour": 7, "ping": False},
+        {"start_hour": 22, "current_hour": 7, "end_hour": 7, "ping": False},
+        {"start_hour": 0, "current_hour": 0, "end_hour": 0, "ping": False},
+    ],
+)
+def test_ping_during_on_and_off_hours(
+    runner, streamer, set_ping_hours, set_time, params
+):
+    set_ping_hours(start_hour=params["start_hour"], end_hour=params["end_hour"])
+    set_time(hour=params["current_hour"])
 
     with patch("offstream.cli.urlopen") as urlopen:
         urlopen.return_value.__enter__.return_value.msg = "OK"
         result = runner.invoke(args=["offstream", "ping"])
 
-    assert result.exit_code == 0
-    assert "OK" in result.stdout
+        assert result.exit_code == 0
 
-
-@pytest.mark.parametrize("hours", [(0, 22, 22), (22, 21, 7), (22, 7, 7), (0, 0, 0)])
-def test_ping_during_off_hours(runner, streamer, settings, set_time, session, hours):
-    start, now, end = hours
-    settings = settings[0]
-    settings.ping_start_hour = start
-    settings.ping_end_hour = end
-    session.commit()
-    set_time(hour=now)
-
-    result = runner.invoke(args=["offstream", "ping"])
-
-    assert result.exit_code == 0
-    assert "Skipped" in result.stdout
+        if params["ping"]:
+            urlopen.assert_called_once()
+            assert "OK" in result.stdout
+        else:
+            urlopen.assert_not_called()
+            assert "Skipped" in result.stdout
 
 
 def test_ping_when_there_are_no_streamers(runner, settings):
