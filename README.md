@@ -20,7 +20,7 @@ You can deploy the app to Heroku by clicking the button below and following the
 instructions. IMPORTANT: When the app is deployed, click on the "View" button at
 the bottom to complete the setup.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/soylent/offstream/tree/v1.0.2)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/soylent/offstream/tree/v1.0.3)
 
 ### Option 2: Local installation
 
