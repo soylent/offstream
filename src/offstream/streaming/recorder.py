@@ -249,14 +249,14 @@ class _Worker:
         finally:
             for file in files:
                 os.remove(file)
-        dir_ipfs = next(file for file in ipfs_files if not file["Name"])
+        ipfs_dir = next(file for file in ipfs_files if not file["Name"])
         for segment in segments:
-            url = self._ipfs_url(dir_ipfs["Hash"], path=segment.file)
+            url = self._ipfs_url(ipfs_dir["Hash"], path=segment.file)
             self._playlist.append(url, segment.duration)
         m3u8 = self._workdir_path / f"{self._streamer.name}.m3u8"
         self._playlist.write(m3u8)
-        m3u8_ipfs = self._ipfs.add(m3u8, cid_version=1)
-        return self._ipfs_url(m3u8_ipfs["Hash"])
+        ipfs_m3u8 = self._ipfs.add(m3u8, cid_version=1)
+        return self._ipfs_url(ipfs_m3u8["Hash"])
 
     def _ipfs_url(self, cid: str, path: str = "") -> str:
         return self.ipfs_gateway_uri_template.format(cid=cid, path=path)
