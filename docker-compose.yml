@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  offstream:
+    image: victor141516/offstream
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: offstream
+    restart: unless-stopped
+    volumes:
+      - ./data:/root/.offstream
